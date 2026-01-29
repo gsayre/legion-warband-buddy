@@ -21,9 +21,6 @@ import {
 import {
   BONUS_STATS,
   createEmptySetFormState,
-  DROP_LOCATION_TYPE_LABELS,
-  DROP_LOCATION_TYPES,
-  type DropLocationType,
   type GearSetFormState,
   getMissingFields,
   isFieldMissing,
@@ -32,6 +29,7 @@ import {
   type SetPiece,
 } from "@/lib/sets-constants"
 import { cn } from "@/lib/utils"
+import { DropLocationPicker } from "./DropLocationPicker"
 
 interface SetEditFormProps {
   initialState?: GearSetFormState
@@ -318,71 +316,12 @@ export function SetEditForm({
                     </Button>
                   </div>
                   {/* Row 2: Drop Location */}
-                  <div className="flex gap-2 items-start">
-                    <div className="w-28">
-                      <Select
-                        value={piece.dropLocation?.type ?? ""}
-                        onValueChange={(value) =>
-                          updatePiece(idx, {
-                            dropLocation: value
-                              ? {
-                                  type: value as DropLocationType,
-                                  name: piece.dropLocation?.name ?? "",
-                                  droppedBy: piece.dropLocation?.droppedBy,
-                                }
-                              : undefined,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Source" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {DROP_LOCATION_TYPES.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {DROP_LOCATION_TYPE_LABELS[type]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        value={piece.dropLocation?.name ?? ""}
-                        onChange={(e) =>
-                          updatePiece(idx, {
-                            dropLocation: piece.dropLocation?.type
-                              ? {
-                                  ...piece.dropLocation,
-                                  name: e.target.value,
-                                }
-                              : undefined,
-                          })
-                        }
-                        placeholder="Location name"
-                        className="h-8 text-xs"
-                        disabled={!piece.dropLocation?.type}
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        value={piece.dropLocation?.droppedBy ?? ""}
-                        onChange={(e) =>
-                          updatePiece(idx, {
-                            dropLocation: piece.dropLocation?.type
-                              ? {
-                                  ...piece.dropLocation,
-                                  droppedBy: e.target.value || undefined,
-                                }
-                              : undefined,
-                          })
-                        }
-                        placeholder="Dropped by (boss name)"
-                        className="h-8 text-xs"
-                        disabled={!piece.dropLocation?.type}
-                      />
-                    </div>
-                  </div>
+                  <DropLocationPicker
+                    value={piece.dropLocation}
+                    onChange={(dropLocation) =>
+                      updatePiece(idx, { dropLocation })
+                    }
+                  />
                 </div>
               ))}
             </div>

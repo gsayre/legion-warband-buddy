@@ -12,10 +12,27 @@ export const DROP_LOCATION_TYPES = [
 
 export type DropLocationType = (typeof DROP_LOCATION_TYPES)[number]
 
+// Location types (only dungeon and raid have structured locations)
+export const LOCATION_TYPES = ["dungeon", "raid"] as const
+export type LocationType = (typeof LOCATION_TYPES)[number]
+
+// Helper to check if a drop location type uses structured locations
+export function usesStructuredLocations(
+  type: DropLocationType,
+): type is LocationType {
+  return type === "dungeon" || type === "raid"
+}
+
 // Drop location
+// For dungeon/raid: use locationId and bossId (ID references)
+// For other types (world, pvp, crafted, shop): use name and droppedBy (freeform strings)
 export interface DropLocation {
   type: DropLocationType
-  name: string
+  // For dungeon/raid: ID references
+  locationId?: string
+  bossId?: string
+  // For other types: freeform strings
+  name?: string
   droppedBy?: string
 }
 
@@ -163,4 +180,35 @@ export const QUALITY_LABELS: Record<Quality, string> = {
   rare: "Rare",
   epic: "Epic",
   legendary: "Legendary",
+}
+
+// Convert form state drop locations to the format expected by Convex mutations
+// This handles the type casting from string to Id<> types
+export function convertDropLocationsForMutation(
+  dropLocations: DropLocation[],
+): unknown[] {
+  return dropLocations.map((dl) => ({
+    type: dl.type,
+    locationId: dl.locationId,
+    bossId: dl.bossId,
+    name: dl.name,
+    droppedBy: dl.droppedBy,
+  }))
+}
+
+// Convert form state pieces to the format expected by Convex mutations
+export function convertPiecesForMutation(pieces: SetPiece[]): unknown[] {
+  return pieces.map((piece) => ({
+    slot: piece.slot,
+    name: piece.name,
+    dropLocation: piece.dropLocation
+      ? {
+          type: piece.dropLocation.type,
+          locationId: piece.dropLocation.locationId,
+          bossId: piece.dropLocation.bossId,
+          name: piece.dropLocation.name,
+          droppedBy: piece.dropLocation.droppedBy,
+        }
+      : undefined,
+  }))
 }

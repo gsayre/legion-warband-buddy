@@ -19,15 +19,13 @@ import {
 } from "@/lib/character-constants"
 import {
   BONUS_STATS,
-  DROP_LOCATION_TYPE_LABELS,
-  DROP_LOCATION_TYPES,
-  type DropLocationType,
   type GearSet,
   type GearSetFormState,
   getMissingFields,
   QUALITY_LABELS,
   setToFormState,
 } from "@/lib/sets-constants"
+import { DropLocationDisplay, DropLocationPicker } from "./DropLocationPicker"
 
 interface SetCardProps {
   set: GearSet
@@ -330,60 +328,13 @@ export function SetCard({
                     </button>
                   </div>
                   {/* Drop location inputs */}
-                  <div className="flex items-center gap-1 pl-2">
-                    <Select
-                      value={piece.dropLocation?.type ?? ""}
-                      onValueChange={(value) =>
-                        updatePiece(idx, {
-                          dropLocation: value
-                            ? {
-                                type: value as DropLocationType,
-                                name: piece.dropLocation?.name ?? "",
-                                droppedBy: piece.dropLocation?.droppedBy,
-                              }
-                            : undefined,
-                        })
+                  <div className="pl-2">
+                    <DropLocationPicker
+                      value={piece.dropLocation}
+                      onChange={(dropLocation) =>
+                        updatePiece(idx, { dropLocation })
                       }
-                    >
-                      <SelectTrigger className="h-5 w-20 text-[10px] px-1 bg-muted/20">
-                        <SelectValue placeholder="Source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {DROP_LOCATION_TYPES.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {DROP_LOCATION_TYPE_LABELS[type]}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      value={piece.dropLocation?.name ?? ""}
-                      onChange={(e) =>
-                        updatePiece(idx, {
-                          dropLocation: piece.dropLocation?.type
-                            ? { ...piece.dropLocation, name: e.target.value }
-                            : undefined,
-                        })
-                      }
-                      placeholder="Location"
-                      className="h-5 text-[10px] px-1.5 py-0 flex-1 bg-muted/20"
-                      disabled={!piece.dropLocation?.type}
-                    />
-                    <Input
-                      value={piece.dropLocation?.droppedBy ?? ""}
-                      onChange={(e) =>
-                        updatePiece(idx, {
-                          dropLocation: piece.dropLocation?.type
-                            ? {
-                                ...piece.dropLocation,
-                                droppedBy: e.target.value || undefined,
-                              }
-                            : undefined,
-                        })
-                      }
-                      placeholder="Boss"
-                      className="h-5 text-[10px] px-1.5 py-0 w-20 bg-muted/20"
-                      disabled={!piece.dropLocation?.type}
+                      compact
                     />
                   </div>
                 </div>
@@ -396,17 +347,7 @@ export function SetCard({
                     </span>
                   </div>
                   {piece.dropLocation && (
-                    <div className="text-[10px] text-muted-foreground/40 pl-2 mt-0.5">
-                      {DROP_LOCATION_TYPE_LABELS[piece.dropLocation.type]}
-                      {piece.dropLocation.name &&
-                        ` · ${piece.dropLocation.name}`}
-                      {piece.dropLocation.droppedBy && (
-                        <span className="text-muted-foreground/60">
-                          {" "}
-                          — {piece.dropLocation.droppedBy}
-                        </span>
-                      )}
-                    </div>
+                    <DropLocationDisplay dropLocation={piece.dropLocation} />
                   )}
                 </div>
               )}

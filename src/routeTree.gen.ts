@@ -13,6 +13,7 @@ import { Route as ProtectedRouteImport } from './routes/_protected'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProtectedDashboardRouteImport } from './routes/_protected/dashboard'
 import { Route as ProtectedSetsIndexRouteImport } from './routes/_protected/sets/index'
+import { Route as ProtectedLocationsIndexRouteImport } from './routes/_protected/locations/index'
 import { Route as ProtectedGuildIndexRouteImport } from './routes/_protected/guild/index'
 import { Route as ProtectedCharactersIndexRouteImport } from './routes/_protected/characters/index'
 import { Route as ProtectedGuildCreateRouteImport } from './routes/_protected/guild/create'
@@ -39,6 +40,11 @@ const ProtectedDashboardRoute = ProtectedDashboardRouteImport.update({
 const ProtectedSetsIndexRoute = ProtectedSetsIndexRouteImport.update({
   id: '/sets/',
   path: '/sets/',
+  getParentRoute: () => ProtectedRoute,
+} as any)
+const ProtectedLocationsIndexRoute = ProtectedLocationsIndexRouteImport.update({
+  id: '/locations/',
+  path: '/locations/',
   getParentRoute: () => ProtectedRoute,
 } as any)
 const ProtectedGuildIndexRoute = ProtectedGuildIndexRouteImport.update({
@@ -95,6 +101,7 @@ export interface FileRoutesByFullPath {
   '/guild/create': typeof ProtectedGuildCreateRoute
   '/characters/': typeof ProtectedCharactersIndexRoute
   '/guild/': typeof ProtectedGuildIndexRoute
+  '/locations/': typeof ProtectedLocationsIndexRoute
   '/sets/': typeof ProtectedSetsIndexRoute
   '/guild/$guildId/applications': typeof ProtectedGuildGuildIdApplicationsRoute
   '/guild/$guildId/': typeof ProtectedGuildGuildIdIndexRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByTo {
   '/guild/create': typeof ProtectedGuildCreateRoute
   '/characters': typeof ProtectedCharactersIndexRoute
   '/guild': typeof ProtectedGuildIndexRoute
+  '/locations': typeof ProtectedLocationsIndexRoute
   '/sets': typeof ProtectedSetsIndexRoute
   '/guild/$guildId/applications': typeof ProtectedGuildGuildIdApplicationsRoute
   '/guild/$guildId': typeof ProtectedGuildGuildIdIndexRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/_protected/guild/create': typeof ProtectedGuildCreateRoute
   '/_protected/characters/': typeof ProtectedCharactersIndexRoute
   '/_protected/guild/': typeof ProtectedGuildIndexRoute
+  '/_protected/locations/': typeof ProtectedLocationsIndexRoute
   '/_protected/sets/': typeof ProtectedSetsIndexRoute
   '/_protected/guild/$guildId/applications': typeof ProtectedGuildGuildIdApplicationsRoute
   '/_protected/guild/$guildId/': typeof ProtectedGuildGuildIdIndexRoute
@@ -138,6 +147,7 @@ export interface FileRouteTypes {
     | '/guild/create'
     | '/characters/'
     | '/guild/'
+    | '/locations/'
     | '/sets/'
     | '/guild/$guildId/applications'
     | '/guild/$guildId/'
@@ -151,6 +161,7 @@ export interface FileRouteTypes {
     | '/guild/create'
     | '/characters'
     | '/guild'
+    | '/locations'
     | '/sets'
     | '/guild/$guildId/applications'
     | '/guild/$guildId'
@@ -165,6 +176,7 @@ export interface FileRouteTypes {
     | '/_protected/guild/create'
     | '/_protected/characters/'
     | '/_protected/guild/'
+    | '/_protected/locations/'
     | '/_protected/sets/'
     | '/_protected/guild/$guildId/applications'
     | '/_protected/guild/$guildId/'
@@ -204,6 +216,13 @@ declare module '@tanstack/react-router' {
       path: '/sets'
       fullPath: '/sets/'
       preLoaderRoute: typeof ProtectedSetsIndexRouteImport
+      parentRoute: typeof ProtectedRoute
+    }
+    '/_protected/locations/': {
+      id: '/_protected/locations/'
+      path: '/locations'
+      fullPath: '/locations/'
+      preLoaderRoute: typeof ProtectedLocationsIndexRouteImport
       parentRoute: typeof ProtectedRoute
     }
     '/_protected/guild/': {
@@ -272,6 +291,7 @@ interface ProtectedRouteChildren {
   ProtectedGuildCreateRoute: typeof ProtectedGuildCreateRoute
   ProtectedCharactersIndexRoute: typeof ProtectedCharactersIndexRoute
   ProtectedGuildIndexRoute: typeof ProtectedGuildIndexRoute
+  ProtectedLocationsIndexRoute: typeof ProtectedLocationsIndexRoute
   ProtectedSetsIndexRoute: typeof ProtectedSetsIndexRoute
   ProtectedGuildGuildIdApplicationsRoute: typeof ProtectedGuildGuildIdApplicationsRoute
   ProtectedGuildGuildIdIndexRoute: typeof ProtectedGuildGuildIdIndexRoute
@@ -285,6 +305,7 @@ const ProtectedRouteChildren: ProtectedRouteChildren = {
   ProtectedGuildCreateRoute: ProtectedGuildCreateRoute,
   ProtectedCharactersIndexRoute: ProtectedCharactersIndexRoute,
   ProtectedGuildIndexRoute: ProtectedGuildIndexRoute,
+  ProtectedLocationsIndexRoute: ProtectedLocationsIndexRoute,
   ProtectedSetsIndexRoute: ProtectedSetsIndexRoute,
   ProtectedGuildGuildIdApplicationsRoute:
     ProtectedGuildGuildIdApplicationsRoute,

@@ -69,10 +69,22 @@ export const DROP_LOCATION_TYPE_VALIDATOR = v.union(
   v.literal("shop"),
 )
 
+// Location type validator (only dungeon and raid - types that have structured locations)
+export const LOCATION_TYPE_VALIDATOR = v.union(
+  v.literal("dungeon"),
+  v.literal("raid"),
+)
+
 // Drop location validator
+// For dungeon/raid: use locationId and bossId (ID references)
+// For other types (world, pvp, crafted, shop): use name and droppedBy (freeform strings)
 export const dropLocationValidator = v.object({
   type: DROP_LOCATION_TYPE_VALIDATOR,
-  name: v.string(),
+  // For dungeon/raid: ID references
+  locationId: v.optional(v.id("locations")),
+  bossId: v.optional(v.id("bosses")),
+  // For other types: freeform strings
+  name: v.optional(v.string()),
   droppedBy: v.optional(v.string()),
 })
 
@@ -193,4 +205,23 @@ export default defineSchema({
   })
     .index("by_name_quality", ["name", "quality"])
     .index("by_quality", ["quality"]),
+
+  // Locations table (dungeons and raids only)
+  locations: defineTable({
+    type: LOCATION_TYPE_VALIDATOR,
+    name: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_type", ["type"])
+    .index("by_type_and_name", ["type", "name"]),
+
+  // Bosses table (linked to locations)
+  bosses: defineTable({
+    locationId: v.id("locations"),
+    name: v.string(),
+    order: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_location", ["locationId"]),
 })

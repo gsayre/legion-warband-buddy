@@ -7,7 +7,12 @@ import {
   type ClassName,
   type SetQuality,
 } from "@/lib/character-constants"
-import type { GearSet, GearSetFormState } from "@/lib/sets-constants"
+import {
+  convertDropLocationsForMutation,
+  convertPiecesForMutation,
+  type GearSet,
+  type GearSetFormState,
+} from "@/lib/sets-constants"
 import { api } from "../../../../convex/_generated/api"
 import type { Id } from "../../../../convex/_generated/dataModel"
 
@@ -66,8 +71,14 @@ function SetsPage() {
         quality: state.quality as SetQuality,
         classes,
         dropLocations:
-          state.dropLocations.length > 0 ? state.dropLocations : undefined,
-        pieces: state.pieces,
+          state.dropLocations.length > 0
+            ? (convertDropLocationsForMutation(
+                state.dropLocations,
+              ) as Parameters<typeof createSet>[0]["dropLocations"])
+            : undefined,
+        pieces: convertPiecesForMutation(state.pieces) as Parameters<
+          typeof createSet
+        >[0]["pieces"],
         bonuses: state.bonuses,
         requiredLevel: state.requiredLevel,
       })
@@ -95,8 +106,14 @@ function SetsPage() {
         quality: state.quality as SetQuality,
         classes: state.classes,
         dropLocations:
-          state.dropLocations.length > 0 ? state.dropLocations : undefined,
-        pieces: state.pieces,
+          state.dropLocations.length > 0
+            ? (convertDropLocationsForMutation(
+                state.dropLocations,
+              ) as Parameters<typeof updateSet>[0]["dropLocations"])
+            : undefined,
+        pieces: convertPiecesForMutation(state.pieces) as Parameters<
+          typeof updateSet
+        >[0]["pieces"],
         bonuses: state.bonuses,
         requiredLevel: state.requiredLevel,
       })

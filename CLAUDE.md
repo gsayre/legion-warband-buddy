@@ -17,10 +17,12 @@ Legion Warband Buddy is a full-stack web application for tracking and managing h
 
 ## Development Commands
 
+Always use `bun` to run scripts
+
 ```bash
-bun run dev           # Start Convex + Vite dev servers concurrently
-bun run dev:web       # Vite dev server only
-bun run dev:convex    # Convex backend only
+bun run dev           # Start Convex + Vite dev servers concurrently [Note: Don't use this unless otherwise told to]
+bun run dev:web       # Vite dev server only [Note: Don't use this unless otherwise told to]
+bun run dev:convex    # Convex backend only 
 bun run build         # Deploy Convex + build Vite for production
 bun run typecheck     # TypeScript validation
 bun run lint          # Biome linting
@@ -28,6 +30,8 @@ bun run lint:fix      # Auto-fix Biome issues
 bun run test          # Vitest watch mode
 bun run test:run      # Vitest single run
 ```
+
+**Do not run:** `bun run dev` (assume already running), `bun run build` (CI only)
 
 ## Architecture
 
