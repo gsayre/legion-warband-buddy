@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { useState } from "react"
-import { GearLayout } from "@/components/character/GearLayout"
+import { CharacterHeader } from "@/components/character/CharacterHeader"
+import { GearGridUShaped } from "@/components/character/GearGridUShaped"
+import { GearListTable } from "@/components/character/GearListTable"
 import { GearRowEditable } from "@/components/character/GearRowEditable"
 import { type GearMode, GearToggle } from "@/components/character/GearToggle"
-import { StatSheet } from "@/components/character/StatSheet"
+import { SetBonusSummary } from "@/components/character/SetBonusSummary"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -20,9 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import type { ClassName, GearPiece, Slot } from "@/lib/character-constants"
+import { getLegendaries } from "@/lib/character-constants"
 import { api } from "../../../../convex/_generated/api"
 import type { Id } from "../../../../convex/_generated/dataModel"
 
@@ -43,14 +44,9 @@ function CharacterDetail() {
 
   const [gearMode, setGearMode] = useState<GearMode>("dungeon")
   const [editingSlot, setEditingSlot] = useState<Slot | null>(null)
-  const [isEditingStats, setIsEditingStats] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Stats editing state
-  const [editHitPercent, setEditHitPercent] = useState("")
-  const [editExpertisePercent, setEditExpertisePercent] = useState("")
 
   if (character === undefined) {
     return (
@@ -85,25 +81,20 @@ function CharacterDetail() {
   const editingGearPiece = editingSlot
     ? currentGear.find((g) => g.slot === editingSlot)
     : null
+  const legendaries = getLegendaries(currentGear)
 
-  function openStatsEditor() {
-    setEditHitPercent(character!.hitPercent.toString())
-    setEditExpertisePercent(character!.expertisePercent.toString())
-    setIsEditingStats(true)
-  }
-
-  async function handleUpdateStats(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleUpdateStats(updates: {
+    hitPercent?: number
+    expertisePercent?: number
+  }) {
     setIsSubmitting(true)
     setError(null)
 
     try {
       await updateCharacter({
         id: characterId as Id<"characters">,
-        hitPercent: parseFloat(editHitPercent) || 0,
-        expertisePercent: parseFloat(editExpertisePercent) || 0,
+        ...updates,
       })
-      setIsEditingStats(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update stats")
     } finally {
@@ -122,6 +113,7 @@ function CharacterDetail() {
         id: characterId as Id<"characters">,
         gearType: gearMode,
         slot: editingSlot,
+        itemName: updates.itemName,
         ilvl: updates.ilvl,
         secondaryStats: updates.secondaryStats,
         setBonus: updates.setBonus,
@@ -129,6 +121,29 @@ function CharacterDetail() {
         quality: updates.quality,
       })
       setEditingSlot(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update gear")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleEditFromTable(slot: Slot, updates: Partial<GearPiece>) {
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      await updateGearPiece({
+        id: characterId as Id<"characters">,
+        gearType: gearMode,
+        slot: slot,
+        itemName: updates.itemName,
+        ilvl: updates.ilvl,
+        secondaryStats: updates.secondaryStats,
+        setBonus: updates.setBonus,
+        legendary: updates.legendary,
+        quality: updates.quality,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update gear")
     } finally {
@@ -159,7 +174,6 @@ function CharacterDetail() {
           <p className="text-muted-foreground">Character Details</p>
         </div>
         <div className="flex items-center gap-4">
-          <GearToggle mode={gearMode} onChange={setGearMode} />
           <Button variant="destructive" onClick={() => setIsDeleting(true)}>
             Delete
           </Button>
@@ -174,41 +188,67 @@ function CharacterDetail() {
         </Card>
       )}
 
-      <main className="grid gap-8 lg:grid-cols-[1fr,300px]">
-        {/* Left column - Gear Layout */}
+      <main className="grid gap-8 lg:grid-cols-2">
+        {/* Left column - Gear Viewer + Set Bonuses side by side */}
         <Card>
-          <CardHeader>
-            <CardTitle>
-              {gearMode === "adventure" ? "Adventure" : "Dungeon"} Gear
-            </CardTitle>
-            <CardDescription>Click a slot to edit</CardDescription>
+          <CardHeader className="pb-0">
+            <div className="flex justify-center">
+              <GearToggle mode={gearMode} onChange={setGearMode} />
+            </div>
           </CardHeader>
           <CardContent>
-            {editingSlot && editingGearPiece ? (
-              <GearRowEditable
-                gear={editingGearPiece}
-                onSave={handleUpdateGear}
-                onCancel={() => setEditingSlot(null)}
-                isSubmitting={isSubmitting}
-              />
-            ) : (
-              <GearLayout
+            <div className="flex gap-6 gear-section">
+              <GearGridUShaped
                 gear={currentGear}
                 onSlotClick={(slot) => setEditingSlot(slot)}
               />
-            )}
+              <div className="flex-shrink-0 min-w-[200px]">
+                <h3 className="font-semibold text-muted-foreground uppercase mb-3">
+                  Set Bonuses
+                </h3>
+                <SetBonusSummary gear={currentGear} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Right column - Stats */}
-        <div>
-          <StatSheet
+        {/* Right column - Character Info + Gear List */}
+        <div className="space-y-6">
+          <CharacterHeader
             className={character.className as ClassName}
             gear={currentGear}
             hitPercent={character.hitPercent}
             expertisePercent={character.expertisePercent}
-            onEditStats={openStatsEditor}
+            onUpdateStats={handleUpdateStats}
+            isSubmitting={isSubmitting}
           />
+
+          <GearListTable
+            gear={currentGear}
+            onEdit={handleEditFromTable}
+            isSubmitting={isSubmitting}
+          />
+
+          {/* Legendaries */}
+          {legendaries.length > 0 && (
+            <div className="bg-muted rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">
+                Legendaries
+              </h3>
+              <div className="space-y-1">
+                {legendaries.map((item) => (
+                  <div
+                    key={`${item.slot}-${item.legendary}`}
+                    className="flex items-center gap-2 text-sm"
+                    style={{ color: "var(--quality-legendary)" }}
+                  >
+                    <span className="font-semibold">{item.legendary}</span>
+                    <span className="text-muted-foreground">({item.slot})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -219,52 +259,24 @@ function CharacterDetail() {
         </Link>
       </div>
 
-      {/* Edit Stats Dialog */}
-      <Dialog open={isEditingStats} onOpenChange={setIsEditingStats}>
+      {/* Edit Gear Dialog (from U-shaped grid click) */}
+      <Dialog
+        open={editingSlot !== null}
+        onOpenChange={(open) => !open && setEditingSlot(null)}
+      >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Combat Stats</DialogTitle>
-            <DialogDescription>
-              Update your hit and expertise percentages
-            </DialogDescription>
+            <DialogTitle>Edit {editingSlot}</DialogTitle>
+            <DialogDescription>Update the gear in this slot</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleUpdateStats} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="hit-percent">Hit %</Label>
-              <Input
-                id="hit-percent"
-                type="number"
-                step="0.1"
-                value={editHitPercent}
-                onChange={(e) => setEditHitPercent(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="expertise-percent">Expertise %</Label>
-              <Input
-                id="expertise-percent"
-                type="number"
-                step="0.1"
-                value={editExpertisePercent}
-                onChange={(e) => setEditExpertisePercent(e.target.value)}
-                disabled={isSubmitting}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : "Save"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditingStats(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
+          {editingGearPiece && (
+            <GearRowEditable
+              gear={editingGearPiece}
+              onSave={handleUpdateGear}
+              onCancel={() => setEditingSlot(null)}
+              isSubmitting={isSubmitting}
+            />
+          )}
         </DialogContent>
       </Dialog>
 

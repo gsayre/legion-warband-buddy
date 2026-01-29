@@ -29,6 +29,7 @@ export function GearRowEditable({
   onCancel,
   isSubmitting,
 }: GearRowEditableProps) {
+  const [itemName, setItemName] = useState(gear.itemName ?? "")
   const [ilvl, setIlvl] = useState(gear.ilvl?.toString() ?? "")
   const [stat1, setStat1] = useState<SecondaryStat | "">(
     gear.secondaryStats?.[0] ?? "",
@@ -46,6 +47,7 @@ export function GearRowEditable({
     if (stat2) secondaryStats.push(stat2)
 
     onSave({
+      itemName: itemName || undefined,
       ilvl: ilvl ? parseInt(ilvl, 10) : undefined,
       secondaryStats: secondaryStats.length > 0 ? secondaryStats : undefined,
       setBonus: setBonus || undefined,
@@ -57,6 +59,17 @@ export function GearRowEditable({
   return (
     <div className="space-y-4 p-4 bg-muted rounded-lg">
       <div className="font-semibold">{gear.slot}</div>
+
+      <div className="space-y-2">
+        <Label htmlFor="itemName">Item Name</Label>
+        <Input
+          id="itemName"
+          value={itemName}
+          onChange={(e) => setItemName(e.target.value)}
+          placeholder="e.g. Helm of Valor"
+          disabled={isSubmitting}
+        />
+      </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">

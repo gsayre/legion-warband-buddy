@@ -6,6 +6,7 @@ interface GearSlotProps {
   gear: GearPiece
   onClick?: () => void
   className?: string
+  displayLabel?: string
 }
 
 // Short labels for slots
@@ -32,7 +33,12 @@ function getQualityClass(quality: Quality): string {
   return `gear-quality-${quality}`
 }
 
-export function GearSlot({ gear, onClick, className }: GearSlotProps) {
+export function GearSlot({
+  gear,
+  onClick,
+  className,
+  displayLabel,
+}: GearSlotProps) {
   const hasItem = gear.ilvl !== undefined && gear.ilvl > 0
   const quality = gear.quality || getQualityFromIlvl(gear.ilvl)
   const isLegendary = Boolean(gear.legendary)
@@ -51,7 +57,7 @@ export function GearSlot({ gear, onClick, className }: GearSlotProps) {
     >
       {/* Slot label */}
       <div className="text-xs text-center text-muted-foreground">
-        {SLOT_LABELS[gear.slot]}
+        {displayLabel || SLOT_LABELS[gear.slot]}
       </div>
 
       {/* Item level badge */}

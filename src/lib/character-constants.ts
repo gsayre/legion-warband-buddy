@@ -99,6 +99,7 @@ export const SET_COLORS: Record<string, string> = {
 // Gear piece type
 export interface GearPiece {
   slot: Slot
+  itemName?: string
   ilvl?: number
   secondaryStats?: SecondaryStat[]
   setBonus?: string
@@ -123,6 +124,7 @@ export interface Character {
 export function createEmptyGearSet(): GearPiece[] {
   return SLOTS.map((slot) => ({
     slot,
+    itemName: undefined,
     ilvl: undefined,
     secondaryStats: undefined,
     setBonus: undefined,

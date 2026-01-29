@@ -1,53 +1,88 @@
-import type { GearPiece } from "@/lib/character-constants"
-import { countSetBonuses, SET_COLORS } from "@/lib/character-constants"
+import type { GearPiece, Slot } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
+
+// Purple color for epic/set items
+const SET_COLOR = "var(--quality-epic)"
 
 interface SetBonusSummaryProps {
   gear: GearPiece[]
   className?: string
 }
 
+// Standard set piece slots (typical tier set slots)
+const SET_SLOTS: Slot[] = ["Head", "Shoulders", "Chest", "Gloves", "Pants"]
+const TOTAL_SET_PIECES = SET_SLOTS.length
+
+// Get all unique set names from gear and group pieces by set
+function getSetBonusData(gear: GearPiece[]) {
+  const setMap = new Map<string, { slot: Slot; equipped: boolean }[]>()
+
+  // First, find all unique set names
+  const setNames = new Set<string>()
+  for (const piece of gear) {
+    if (piece.setBonus) {
+      setNames.add(piece.setBonus)
+    }
+  }
+
+  // For each set, create the list of slots with equipped status
+  for (const setName of setNames) {
+    const pieces = SET_SLOTS.map((slot) => {
+      const gearPiece = gear.find((g) => g.slot === slot)
+      const isEquipped = gearPiece?.setBonus === setName
+      return { slot, equipped: isEquipped }
+    })
+    setMap.set(setName, pieces)
+  }
+
+  return setMap
+}
+
 export function SetBonusSummary({ gear, className }: SetBonusSummaryProps) {
-  const setBonuses = countSetBonuses(gear)
-  const entries = Object.entries(setBonuses).sort((a, b) => b[1] - a[1])
+  const setData = getSetBonusData(gear)
+  const entries = Array.from(setData.entries()).sort((a, b) => {
+    // Sort by number of equipped pieces (descending)
+    const aCount = a[1].filter((p) => p.equipped).length
+    const bCount = b[1].filter((p) => p.equipped).length
+    return bCount - aCount
+  })
 
   if (entries.length === 0) {
     return (
-      <div className={cn("text-sm text-muted-foreground", className)}>
+      <div className={cn("text-muted-foreground", className)}>
         No set bonuses
       </div>
     )
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-2", className)}>
-      {entries.map(([setName, count]) => {
-        const color = SET_COLORS[setName] || "#888"
-        const hasBonus = count >= 2
+    <div className={cn("space-y-4", className)}>
+      {entries.map(([setName, pieces]) => {
+        const equippedCount = pieces.filter((p) => p.equipped).length
 
         return (
-          <div
-            key={setName}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-sm",
-              hasBonus ? "font-semibold" : "opacity-70",
-            )}
-            style={{
-              backgroundColor: `${color}20`,
-              borderColor: color,
-              borderWidth: 1,
-              color: color,
-            }}
-          >
-            <span>{setName}</span>
-            <span
-              className={cn(
-                "inline-flex items-center justify-center w-5 h-5 rounded-full text-xs",
-                hasBonus ? "bg-background/50" : "bg-background/30",
-              )}
+          <div key={setName} className="space-y-1">
+            <h4
+              className="font-semibold"
+              style={{ color: SET_COLOR }}
             >
-              {count}
-            </span>
+              {setName} ({equippedCount}/{TOTAL_SET_PIECES}):
+            </h4>
+            <ul className="space-y-0.5 pl-2">
+              {pieces.map(({ slot, equipped }) => (
+                <li
+                  key={slot}
+                  className={cn(
+                    "flex items-center gap-1",
+                    equipped ? "set-piece-equipped" : "text-muted-foreground/50",
+                  )}
+                  style={equipped ? { color: SET_COLOR } : undefined}
+                >
+                  <span className="text-muted-foreground/50">-</span>
+                  <span>{slot}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )
       })}

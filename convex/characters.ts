@@ -72,6 +72,7 @@ const ALL_SLOTS = [
 function createEmptyGearSet() {
   return ALL_SLOTS.map((slot) => ({
     slot,
+    itemName: undefined,
     ilvl: undefined,
     secondaryStats: undefined,
     setBonus: undefined,
@@ -203,6 +204,7 @@ export const updateGearPiece = mutation({
     id: v.id("characters"),
     gearType: v.union(v.literal("adventure"), v.literal("dungeon")),
     slot: SLOTS_VALIDATOR,
+    itemName: v.optional(v.string()),
     ilvl: v.optional(v.number()),
     secondaryStats: v.optional(v.array(SECONDARY_STATS_VALIDATOR)),
     setBonus: v.optional(v.string()),
@@ -231,6 +233,7 @@ export const updateGearPiece = mutation({
 
     currentGear[slotIndex] = {
       slot: args.slot,
+      itemName: args.itemName,
       ilvl: args.ilvl,
       secondaryStats: args.secondaryStats,
       setBonus: args.setBonus,
@@ -362,6 +365,7 @@ export const importFromJson = mutation({
           if (!piece || piece.ilvl === null) {
             return {
               slot,
+              itemName: undefined,
               ilvl: undefined,
               secondaryStats: undefined,
               setBonus: undefined,
@@ -371,6 +375,7 @@ export const importFromJson = mutation({
           }
           return {
             slot,
+            itemName: undefined,
             ilvl: piece.ilvl,
             secondaryStats: parseSecondaryStats(piece.secondaryStats),
             setBonus: piece.setBonus || undefined,

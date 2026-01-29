@@ -1,6 +1,7 @@
 import { SignIn, useAuth } from "@clerk/clerk-react"
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
+import { NavBar } from "@/components/NavBar"
 
 export const Route = createFileRoute("/_protected")({
   component: ProtectedLayout,
@@ -32,5 +33,10 @@ function ProtectedLayout() {
     )
   }
 
-  return <Outlet />
+  return (
+    <div className="main-with-nav">
+      <NavBar />
+      <Outlet />
+    </div>
+  )
 }

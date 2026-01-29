@@ -55,6 +55,7 @@ const QUALITY_VALIDATOR = v.union(
 // Gear piece validator
 const gearPieceValidator = v.object({
   slot: SLOTS_VALIDATOR,
+  itemName: v.optional(v.string()),
   ilvl: v.optional(v.number()),
   secondaryStats: v.optional(v.array(SECONDARY_STATS_VALIDATOR)),
   setBonus: v.optional(v.string()),
