@@ -55,7 +55,14 @@ export function GearGridUShaped({
   }
 
   return (
-    <div className={cn("gear-grid-u-shaped", className)}>
+    <div
+      className={cn(
+        "grid gap-5 justify-items-center p-8 w-full max-w-[1000px]",
+        "grid-cols-[repeat(5,minmax(120px,1fr))] grid-rows-[repeat(7,auto)]",
+        "max-sm:grid-cols-[repeat(5,1fr)] max-sm:gap-1 max-sm:p-2",
+        className,
+      )}
+    >
       {Object.entries(SLOT_POSITIONS).map(([slot, position]) => {
         const gearPiece = getGearBySlot(gear, slot as Slot)
         const displayLabel = DISPLAY_LABELS[slot as Slot]

@@ -59,7 +59,7 @@ export function StatSheet({
             <div
               className={cn(
                 "text-xl font-bold",
-                hitCapped ? "stat-capped" : "stat-uncapped",
+                hitCapped ? "text-green-500 font-semibold" : "text-yellow-500",
               )}
             >
               {hitPercent.toFixed(1)}%
@@ -73,7 +73,9 @@ export function StatSheet({
             <div
               className={cn(
                 "text-xl font-bold",
-                expertiseCapped ? "stat-capped" : "stat-uncapped",
+                expertiseCapped
+                  ? "text-green-500 font-semibold"
+                  : "text-yellow-500",
               )}
             >
               {expertisePercent.toFixed(1)}%

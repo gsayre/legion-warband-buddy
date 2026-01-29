@@ -121,7 +121,7 @@ function InlineEditableStat({
       <span
         className={cn(
           "text-xl font-bold",
-          isCapped ? "stat-capped" : "stat-uncapped",
+          isCapped ? "text-green-500 font-semibold" : "text-yellow-500",
         )}
       >
         {value.toFixed(1)}%

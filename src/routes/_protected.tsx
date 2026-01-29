@@ -34,7 +34,7 @@ function ProtectedLayout() {
   }
 
   return (
-    <div className="main-with-nav">
+    <div className="min-h-screen">
       <NavBar />
       <Outlet />
     </div>

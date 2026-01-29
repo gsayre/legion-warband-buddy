@@ -197,7 +197,7 @@ function CharacterDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-6 gear-section">
+            <div className="flex gap-6 text-lg">
               <GearGridUShaped
                 gear={currentGear}
                 onSlotClick={(slot) => setEditingSlot(slot)}
