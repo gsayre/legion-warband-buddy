@@ -12,7 +12,7 @@ fi
 
 # Generate commit message using Claude Code CLI
 echo "Generating commit message..."
-COMMIT_MSG=$(echo "Based on these changes, write a single concise commit message (one line, no quotes, imperative mood, max 72 chars):
+COMMIT_MSG=$(echo "You are a commit message generator. Output ONLY the commit message itself - no explanation, no preamble, no quotes. One line, imperative mood, max 72 chars.
 
 Status:
 $STATUS
