@@ -7,14 +7,20 @@ import { api } from "../../convex/_generated/api"
 const NAV_ITEMS = [
   { label: "Home", path: "/dashboard" },
   { label: "Characters", path: "/characters" },
-  { label: "Sets", path: "/sets" },
+  { label: "Sets", path: "/sets", adminOnly: true },
   { label: "Guild", path: "/guild" },
 ] as const
 
 export function NavBar() {
   const location = useLocation()
+  const user = useQuery(api.users.getMe)
   const characters = useQuery(api.characters.list)
   const [isHoveringCharacters, setIsHoveringCharacters] = useState(false)
+
+  const isAdmin = user?.isAdmin ?? false
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !("adminOnly" in item && item.adminOnly) || isAdmin,
+  )
 
   const isActive = (path: string) => {
     if (path === "/characters") {
@@ -40,7 +46,7 @@ export function NavBar() {
       {/* Main navigation bar */}
       <nav className="nav-bar">
         <ul className="nav-list">
-          {NAV_ITEMS.map((item) => (
+          {visibleNavItems.map((item) => (
             <li key={item.path}>
               {item.label === "Characters" ? (
                 <Link

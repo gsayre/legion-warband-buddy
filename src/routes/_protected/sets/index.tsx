@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { ClassColumn } from "@/components/sets/ClassColumn"
 import {
   CLASSES,
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_protected/sets/")({
 })
 
 function SetsPage() {
+  const navigate = useNavigate()
   const user = useQuery(api.users.getMe)
   const sets = useQuery(api.sets.list)
   const createSet = useMutation(api.sets.create)
@@ -34,6 +35,13 @@ function SetsPage() {
   const [error, setError] = useState<string | null>(null)
 
   const isAdmin = user?.isAdmin ?? false
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (user !== undefined && !user?.isAdmin) {
+      navigate({ to: "/" })
+    }
+  }, [user, navigate])
 
   async function handleCreateSet(
     className: ClassName,
@@ -104,6 +112,15 @@ function SetsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    )
+  }
+
+  // Don't render content for non-admin users (redirect is in progress)
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Access denied</div>
       </div>
     )
   }
