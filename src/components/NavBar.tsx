@@ -1,12 +1,13 @@
 import { Link, useLocation } from "@tanstack/react-router"
 import { useQuery } from "convex/react"
 import { useState } from "react"
-import { api } from "../../convex/_generated/api"
 import { cn } from "@/lib/utils"
+import { api } from "../../convex/_generated/api"
 
 const NAV_ITEMS = [
   { label: "Home", path: "/dashboard" },
   { label: "Characters", path: "/characters" },
+  { label: "Sets", path: "/sets" },
   { label: "Guild", path: "/guild" },
 ] as const
 
@@ -18,6 +19,9 @@ export function NavBar() {
   const isActive = (path: string) => {
     if (path === "/characters") {
       return location.pathname.startsWith("/characters")
+    }
+    if (path === "/sets") {
+      return location.pathname.startsWith("/sets")
     }
     if (path === "/guild") {
       return location.pathname.startsWith("/guild")
@@ -43,7 +47,7 @@ export function NavBar() {
                   to="/characters"
                   className={cn(
                     "nav-link",
-                    isActive(item.path) && "nav-link-active"
+                    isActive(item.path) && "nav-link-active",
                   )}
                   onMouseEnter={() => setIsHoveringCharacters(true)}
                 >
@@ -54,7 +58,7 @@ export function NavBar() {
                   to={item.path}
                   className={cn(
                     "nav-link",
-                    isActive(item.path) && "nav-link-active"
+                    isActive(item.path) && "nav-link-active",
                   )}
                 >
                   {item.label}
@@ -79,7 +83,8 @@ export function NavBar() {
                 params={{ characterId: char._id }}
                 className={cn(
                   "nav-submenu-link",
-                  location.pathname === `/characters/${char._id}` && "nav-submenu-link-active"
+                  location.pathname === `/characters/${char._id}` &&
+                    "nav-submenu-link-active",
                 )}
               >
                 {char.className}

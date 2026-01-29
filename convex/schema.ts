@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
 
 // Character class validator
-const CLASSES_VALIDATOR = v.union(
+export const CLASSES_VALIDATOR = v.union(
   v.literal("Warrior"),
   v.literal("Rogue"),
   v.literal("Priest"),
@@ -44,13 +44,51 @@ const SECONDARY_STATS_VALIDATOR = v.union(
 )
 
 // Item quality validator
-const QUALITY_VALIDATOR = v.union(
+export const QUALITY_VALIDATOR = v.union(
   v.literal("common"),
   v.literal("uncommon"),
   v.literal("rare"),
   v.literal("epic"),
   v.literal("legendary"),
 )
+
+// Set quality validator (sets can only be rare, epic, or legendary)
+export const SET_QUALITY_VALIDATOR = v.union(
+  v.literal("rare"),
+  v.literal("epic"),
+  v.literal("legendary"),
+)
+
+// Drop location type validator
+export const DROP_LOCATION_TYPE_VALIDATOR = v.union(
+  v.literal("dungeon"),
+  v.literal("raid"),
+  v.literal("world"),
+  v.literal("pvp"),
+  v.literal("crafted"),
+  v.literal("shop"),
+)
+
+// Drop location validator
+export const dropLocationValidator = v.object({
+  type: DROP_LOCATION_TYPE_VALIDATOR,
+  name: v.string(),
+  droppedBy: v.optional(v.string()),
+})
+
+// Set piece validator
+export const setPieceValidator = v.object({
+  slot: v.string(),
+  name: v.string(),
+  dropLocation: v.optional(dropLocationValidator),
+})
+
+// Set bonus validator (stat + value for bonuses like "+20 Sta")
+export const setBonusValidator = v.object({
+  pieces: v.number(),
+  stat: v.string(),
+  value: v.number(),
+})
 
 // Gear piece validator
 const gearPieceValidator = v.object({
@@ -86,6 +124,7 @@ export default defineSchema({
     name: v.string(),
     email: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
+    isAdmin: v.optional(v.boolean()),
   }).index("by_clerk_id", ["clerkId"]),
 
   // Guilds table
@@ -139,4 +178,19 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_user_and_class", ["userId", "className"]),
+
+  // Sets table (gear set definitions)
+  sets: defineTable({
+    name: v.string(),
+    quality: SET_QUALITY_VALIDATOR,
+    classes: v.array(CLASSES_VALIDATOR),
+    dropLocations: v.optional(v.array(dropLocationValidator)),
+    pieces: v.array(setPieceValidator),
+    bonuses: v.array(setBonusValidator),
+    requiredLevel: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_name_quality", ["name", "quality"])
+    .index("by_quality", ["quality"]),
 })

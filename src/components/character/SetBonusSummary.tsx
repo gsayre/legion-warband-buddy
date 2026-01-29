@@ -62,10 +62,7 @@ export function SetBonusSummary({ gear, className }: SetBonusSummaryProps) {
 
         return (
           <div key={setName} className="space-y-1">
-            <h4
-              className="font-semibold"
-              style={{ color: SET_COLOR }}
-            >
+            <h4 className="font-semibold" style={{ color: SET_COLOR }}>
               {setName} ({equippedCount}/{TOTAL_SET_PIECES}):
             </h4>
             <ul className="space-y-0.5 pl-2">
@@ -74,7 +71,9 @@ export function SetBonusSummary({ gear, className }: SetBonusSummaryProps) {
                   key={slot}
                   className={cn(
                     "flex items-center gap-1",
-                    equipped ? "set-piece-equipped" : "text-muted-foreground/50",
+                    equipped
+                      ? "set-piece-equipped"
+                      : "text-muted-foreground/50",
                   )}
                   style={equipped ? { color: SET_COLOR } : undefined}
                 >

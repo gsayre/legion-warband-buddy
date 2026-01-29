@@ -12,6 +12,7 @@ import type * as characters from "../characters.js";
 import type * as guilds from "../guilds.js";
 import type * as heroes from "../heroes.js";
 import type * as http from "../http.js";
+import type * as sets from "../sets.js";
 import type * as users from "../users.js";
 
 import type {
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   guilds: typeof guilds;
   heroes: typeof heroes;
   http: typeof http;
+  sets: typeof sets;
   users: typeof users;
 }>;
 

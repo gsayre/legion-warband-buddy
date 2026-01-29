@@ -10,6 +10,16 @@ export const CLASSES = [
 
 export type ClassName = (typeof CLASSES)[number]
 
+// Class colors
+export const CLASS_COLORS: Record<ClassName, string> = {
+  Warrior: "#f97316", // orange
+  Rogue: "#eab308", // yellow
+  Priest: "#ffffff", // white
+  Mage: "#3b82f6", // blue
+  Hunter: "#22c55e", // green
+  Paladin: "#ec4899", // pink
+}
+
 // Equipment slots
 export const SLOTS = [
   "Head",
@@ -56,6 +66,11 @@ export const QUALITY = [
 ] as const
 
 export type Quality = (typeof QUALITY)[number]
+
+// Set quality (sets can only be rare, epic, or legendary)
+export const SET_QUALITY = ["rare", "epic", "legendary"] as const
+
+export type SetQuality = (typeof SET_QUALITY)[number]
 
 // Quality colors (CSS variable names)
 export const QUALITY_COLORS: Record<Quality, string> = {
