@@ -2,8 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Card,
   CardContent,
@@ -11,6 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { api } from "../../../../convex/_generated/api"
 
 export const Route = createFileRoute("/_protected/guild/create")({
@@ -41,11 +41,15 @@ function CreateGuild() {
           <CardHeader>
             <CardTitle>Cannot Create Guild</CardTitle>
             <CardDescription>
-              You are already a member of a guild. Leave your current guild before creating a new one.
+              You are already a member of a guild. Leave your current guild
+              before creating a new one.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" onClick={() => navigate({ to: "/guild" })}>
+            <Button
+              variant="outline"
+              onClick={() => navigate({ to: "/guild" })}
+            >
               Back to Guild
             </Button>
           </CardContent>

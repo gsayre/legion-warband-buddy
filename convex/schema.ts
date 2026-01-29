@@ -1,6 +1,67 @@
 import { defineSchema, defineTable } from "convex/server"
 import { v } from "convex/values"
 
+// Character class validator
+const CLASSES_VALIDATOR = v.union(
+  v.literal("Warrior"),
+  v.literal("Rogue"),
+  v.literal("Priest"),
+  v.literal("Mage"),
+  v.literal("Hunter"),
+  v.literal("Paladin"),
+)
+
+// Equipment slot validator
+const SLOTS_VALIDATOR = v.union(
+  v.literal("Head"),
+  v.literal("Neck"),
+  v.literal("Shoulders"),
+  v.literal("Chest"),
+  v.literal("Back"),
+  v.literal("Wrist"),
+  v.literal("Gloves"),
+  v.literal("Main Hand"),
+  v.literal("Off Hand"),
+  v.literal("Belt"),
+  v.literal("Pants"),
+  v.literal("Boots"),
+  v.literal("Ring 1"),
+  v.literal("Ring 2"),
+  v.literal("Trinket 1"),
+  v.literal("Trinket 2"),
+)
+
+// Secondary stats validator
+const SECONDARY_STATS_VALIDATOR = v.union(
+  v.literal("Hit"),
+  v.literal("Crit"),
+  v.literal("Haste"),
+  v.literal("Parry"),
+  v.literal("Versatility"),
+  v.literal("Resilience"),
+  v.literal("DG"),
+  v.literal("Expertise"),
+)
+
+// Item quality validator
+const QUALITY_VALIDATOR = v.union(
+  v.literal("common"),
+  v.literal("uncommon"),
+  v.literal("rare"),
+  v.literal("epic"),
+  v.literal("legendary"),
+)
+
+// Gear piece validator
+const gearPieceValidator = v.object({
+  slot: SLOTS_VALIDATOR,
+  ilvl: v.optional(v.number()),
+  secondaryStats: v.optional(v.array(SECONDARY_STATS_VALIDATOR)),
+  setBonus: v.optional(v.string()),
+  legendary: v.optional(v.string()),
+  quality: v.optional(QUALITY_VALIDATOR),
+})
+
 export default defineSchema({
   heroes: defineTable({
     userId: v.string(),
@@ -63,4 +124,18 @@ export default defineSchema({
     .index("by_guild", ["guildId"])
     .index("by_user", ["userId"])
     .index("by_guild_and_status", ["guildId", "status"]),
+
+  // Characters table (warband gear tracking)
+  characters: defineTable({
+    userId: v.string(),
+    className: CLASSES_VALIDATOR,
+    hitPercent: v.number(),
+    expertisePercent: v.number(),
+    adventureGear: v.array(gearPieceValidator),
+    dungeonGear: v.array(gearPieceValidator),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_class", ["userId", "className"]),
 })

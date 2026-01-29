@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { useState } from "react"
+import { GuildCard } from "@/components/guild/GuildCard"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Card,
   CardContent,
@@ -18,7 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { GuildCard } from "@/components/guild/GuildCard"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { api } from "../../../../convex/_generated/api"
 import type { Id } from "../../../../convex/_generated/dataModel"
 
@@ -99,9 +99,7 @@ function BrowseGuilds() {
           <Card>
             <CardHeader>
               <CardTitle>No Guilds Found</CardTitle>
-              <CardDescription>
-                Be the first to create a guild!
-              </CardDescription>
+              <CardDescription>Be the first to create a guild!</CardDescription>
             </CardHeader>
             <CardContent>
               <Link to="/guild/create">
@@ -130,7 +128,10 @@ function BrowseGuilds() {
         </div>
       </main>
 
-      <Dialog open={applyingTo !== null} onOpenChange={(open) => !open && setApplyingTo(null)}>
+      <Dialog
+        open={applyingTo !== null}
+        onOpenChange={(open) => !open && setApplyingTo(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Apply to Guild</DialogTitle>

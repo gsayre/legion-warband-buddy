@@ -47,7 +47,9 @@ function GuildHub() {
             <CardContent>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-sm text-muted-foreground">
-                  You are {myMembership?.role === "owner" ? "the owner" : "a member"} of this guild
+                  You are{" "}
+                  {myMembership?.role === "owner" ? "the owner" : "a member"} of
+                  this guild
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -70,7 +72,8 @@ function GuildHub() {
             <CardHeader>
               <CardTitle>No Guild</CardTitle>
               <CardDescription>
-                You're not currently in a guild. Create your own or join an existing one.
+                You're not currently in a guild. Create your own or join an
+                existing one.
               </CardDescription>
             </CardHeader>
             <CardContent>

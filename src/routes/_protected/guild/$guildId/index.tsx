@@ -2,9 +2,8 @@ import { useUser } from "@clerk/clerk-react"
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { useState } from "react"
+import { MemberCard } from "@/components/guild/MemberCard"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Card,
   CardContent,
@@ -19,7 +18,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { MemberCard } from "@/components/guild/MemberCard"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { api } from "../../../../../convex/_generated/api"
 import type { Id } from "../../../../../convex/_generated/dataModel"
 
@@ -50,7 +50,11 @@ function GuildDetail() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  if (guild === undefined || members === undefined || myMembership === undefined) {
+  if (
+    guild === undefined ||
+    members === undefined ||
+    myMembership === undefined
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -207,7 +211,11 @@ function GuildDetail() {
                 </>
               )}
               {!isOwner && (
-                <Button variant="destructive" onClick={handleLeaveGuild} disabled={isSubmitting}>
+                <Button
+                  variant="destructive"
+                  onClick={handleLeaveGuild}
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Leaving..." : "Leave Guild"}
                 </Button>
               )}
@@ -249,7 +257,9 @@ function GuildDetail() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Guild</DialogTitle>
-            <DialogDescription>Update your guild's information</DialogDescription>
+            <DialogDescription>
+              Update your guild's information
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateGuild} className="space-y-4">
             <div className="space-y-2">
@@ -292,8 +302,8 @@ function GuildDetail() {
           <DialogHeader>
             <DialogTitle>Delete Guild</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this guild? This action cannot be undone.
-              All members will be removed.
+              Are you sure you want to delete this guild? This action cannot be
+              undone. All members will be removed.
             </DialogDescription>
           </DialogHeader>
           <div className="flex gap-2">

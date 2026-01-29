@@ -1,11 +1,6 @@
 import { Link } from "@tanstack/react-router"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Doc, Id } from "../../../convex/_generated/dataModel"
 
 interface MemberCardProps {

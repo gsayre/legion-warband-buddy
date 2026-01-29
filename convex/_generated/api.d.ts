@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as characters from "../characters.js";
 import type * as guilds from "../guilds.js";
 import type * as heroes from "../heroes.js";
 import type * as http from "../http.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  characters: typeof characters;
   guilds: typeof guilds;
   heroes: typeof heroes;
   http: typeof http;

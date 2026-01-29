@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -6,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import type { Doc } from "../../../convex/_generated/dataModel"
 
 interface GuildCardProps {

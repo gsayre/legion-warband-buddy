@@ -121,3 +121,98 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Quality/Rarity Colors */
+:root {
+  --quality-common: #9ca3af;
+  --quality-uncommon: #22c55e;
+  --quality-rare: #3b82f6;
+  --quality-epic: #a855f7;
+  --quality-legendary: #f97316;
+}
+
+.dark {
+  --quality-common: #9ca3af;
+  --quality-uncommon: #4ade80;
+  --quality-rare: #60a5fa;
+  --quality-epic: #c084fc;
+  --quality-legendary: #fb923c;
+}
+
+/* Legendary glow animation */
+@keyframes legendary-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px var(--quality-legendary),
+                0 0 16px 4px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px var(--quality-legendary),
+                0 0 24px 8px rgba(249, 115, 22, 0.4);
+  }
+}
+
+/* Gear slot styles */
+.gear-slot {
+  @apply relative rounded-lg border-2 p-2 transition-all duration-200;
+  @apply hover:scale-105 cursor-pointer;
+  min-width: 60px;
+  min-height: 60px;
+}
+
+.gear-slot-empty {
+  @apply border-dashed border-muted-foreground/30 bg-muted/20;
+}
+
+.gear-quality-common {
+  border-color: var(--quality-common);
+  background-color: rgba(156, 163, 175, 0.1);
+}
+
+.gear-quality-uncommon {
+  border-color: var(--quality-uncommon);
+  background-color: rgba(34, 197, 94, 0.1);
+}
+
+.gear-quality-rare {
+  border-color: var(--quality-rare);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.gear-quality-epic {
+  border-color: var(--quality-epic);
+  background-color: rgba(168, 85, 247, 0.1);
+}
+
+.gear-quality-legendary {
+  border-color: var(--quality-legendary);
+  background-color: rgba(249, 115, 22, 0.1);
+}
+
+/* Legendary glow effect */
+.legendary-glow {
+  animation: legendary-glow 2s ease-in-out infinite;
+}
+
+/* Stat cap indicator */
+.stat-capped {
+  @apply text-green-500 font-semibold;
+}
+
+.stat-uncapped {
+  @apply text-yellow-500;
+}
+
+/* Ilvl badge */
+.ilvl-badge {
+  @apply absolute -top-1 -right-1 text-xs font-bold rounded-full px-1.5 py-0.5;
+  @apply bg-background border shadow-sm;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Set bonus indicator */
+.set-bonus-indicator {
+  @apply absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-semibold;
+  @apply rounded px-1 py-0.5 whitespace-nowrap;
+  @apply bg-background/90 backdrop-blur-sm;
+}

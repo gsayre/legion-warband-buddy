@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { useState } from "react"
+import { ApplicationCard } from "@/components/guild/ApplicationCard"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,13 +10,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { ApplicationCard } from "@/components/guild/ApplicationCard"
 import { api } from "../../../../../convex/_generated/api"
 import type { Id } from "../../../../../convex/_generated/dataModel"
 
-export const Route = createFileRoute("/_protected/guild/$guildId/applications")({
-  component: ManageApplications,
-})
+export const Route = createFileRoute("/_protected/guild/$guildId/applications")(
+  {
+    component: ManageApplications,
+  },
+)
 
 function ManageApplications() {
   const { guildId } = Route.useParams()
@@ -56,12 +58,17 @@ function ManageApplications() {
     )
   }
 
-  async function handleResolve(applicationId: Id<"guildApplications">, approved: boolean) {
+  async function handleResolve(
+    applicationId: Id<"guildApplications">,
+    approved: boolean,
+  ) {
     setError(null)
     try {
       await resolveApplication({ applicationId, approved })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to resolve application")
+      setError(
+        err instanceof Error ? err.message : "Failed to resolve application",
+      )
     }
   }
 

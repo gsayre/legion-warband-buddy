@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "convex/react"
+import { HeroViewCard } from "@/components/guild/HeroViewCard"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -8,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { HeroViewCard } from "@/components/guild/HeroViewCard"
 import { api } from "../../../../../../convex/_generated/api"
 import type { Id } from "../../../../../../convex/_generated/dataModel"
 
@@ -42,7 +42,8 @@ function ViewMemberHeroes() {
           <CardHeader>
             <CardTitle>Member Not Found</CardTitle>
             <CardDescription>
-              This user is not a member of your guild or you don't have permission to view their heroes.
+              This user is not a member of your guild or you don't have
+              permission to view their heroes.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -61,9 +62,7 @@ function ViewMemberHeroes() {
     <div className="min-h-screen p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold">{memberName}'s Warband</h1>
-        <p className="text-muted-foreground">
-          Viewing heroes (read-only)
-        </p>
+        <p className="text-muted-foreground">Viewing heroes (read-only)</p>
       </header>
 
       <main className="space-y-8">
