@@ -1,7 +1,11 @@
 import { v } from "convex/values"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
-import { LOCATION_TYPE_VALIDATOR, slotDropValidator } from "./schema"
+import {
+  LOCATION_TYPE_VALIDATOR,
+  setBonusValidator,
+  slotDropValidator,
+} from "./schema"
 
 // Helper to require admin access
 async function requireAdmin(ctx: MutationCtx | QueryCtx) {
@@ -347,6 +351,7 @@ export const listDropPatterns = query({
       _creationTime: v.number(),
       name: v.string(),
       slotDrops: v.array(slotDropValidator),
+      defaultBonuses: v.optional(v.array(setBonusValidator)),
       createdAt: v.number(),
       updatedAt: v.number(),
     }),
@@ -365,6 +370,7 @@ export const getDropPattern = query({
       _creationTime: v.number(),
       name: v.string(),
       slotDrops: v.array(slotDropValidator),
+      defaultBonuses: v.optional(v.array(setBonusValidator)),
       createdAt: v.number(),
       updatedAt: v.number(),
     }),
@@ -384,6 +390,7 @@ export const createDropPattern = mutation({
   args: {
     name: v.string(),
     slotDrops: v.array(slotDropValidator),
+    defaultBonuses: v.optional(v.array(setBonusValidator)),
   },
   returns: v.id("setDropPatterns"),
   handler: async (ctx, args) => {
@@ -403,6 +410,7 @@ export const createDropPattern = mutation({
     return await ctx.db.insert("setDropPatterns", {
       name: args.name,
       slotDrops: args.slotDrops,
+      defaultBonuses: args.defaultBonuses,
       createdAt: now,
       updatedAt: now,
     })
@@ -415,6 +423,7 @@ export const updateDropPattern = mutation({
     id: v.id("setDropPatterns"),
     name: v.optional(v.string()),
     slotDrops: v.optional(v.array(slotDropValidator)),
+    defaultBonuses: v.optional(v.array(setBonusValidator)),
   },
   returns: v.null(),
   handler: async (ctx, args) => {

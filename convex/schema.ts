@@ -245,6 +245,7 @@ export default defineSchema({
   setDropPatterns: defineTable({
     name: v.string(),
     slotDrops: v.array(slotDropValidator),
+    defaultBonuses: v.optional(v.array(setBonusValidator)),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_name", ["name"]),

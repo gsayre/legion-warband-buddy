@@ -7,6 +7,7 @@ import {
   type SlotDrop,
 } from "@/components/locations/DropPatternsSection"
 import { LocationTypeSection } from "@/components/locations/LocationTypeSection"
+import type { SetBonus } from "@/lib/sets-constants"
 import { LOCATION_TYPES, type LocationType } from "@/lib/sets-constants"
 import { api } from "../../../../convex/_generated/api"
 import type { Id } from "../../../../convex/_generated/dataModel"
@@ -136,11 +137,15 @@ function LocationsPage() {
     }
   }
 
-  async function handleCreateDropPattern(name: string, slotDrops: SlotDrop[]) {
+  async function handleCreateDropPattern(
+    name: string,
+    slotDrops: SlotDrop[],
+    defaultBonuses?: SetBonus[],
+  ) {
     setIsSubmitting(true)
     setError(null)
     try {
-      await createDropPattern({ name, slotDrops })
+      await createDropPattern({ name, slotDrops, defaultBonuses })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to create drop pattern",
@@ -154,11 +159,12 @@ function LocationsPage() {
     id: Id<"setDropPatterns">,
     name: string,
     slotDrops: SlotDrop[],
+    defaultBonuses?: SetBonus[],
   ) {
     setIsSubmitting(true)
     setError(null)
     try {
-      await updateDropPattern({ id, name, slotDrops })
+      await updateDropPattern({ id, name, slotDrops, defaultBonuses })
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to update drop pattern",

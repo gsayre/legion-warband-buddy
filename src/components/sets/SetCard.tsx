@@ -1,12 +1,5 @@
 import { useQuery } from "convex/react"
-import {
-  AlertTriangle,
-  Check,
-  Pencil,
-  Plus,
-  Trash2,
-  X,
-} from "lucide-react"
+import { AlertTriangle, Check, Pencil, Plus, Trash2, X } from "lucide-react"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import {
@@ -82,7 +75,7 @@ export function SetCard({
     onStartEdit()
   }
 
-  // Handle drop pattern selection - auto-applies to existing pieces
+  // Handle drop pattern selection - auto-applies to existing pieces and bonuses
   function handlePatternChange(value: string) {
     const patternId = value === "none" ? undefined : value
 
@@ -115,6 +108,15 @@ export function SetCard({
         }),
       )
 
+      // Apply default bonuses from pattern (always replace existing bonuses)
+      const newBonuses = pattern.defaultBonuses
+        ? pattern.defaultBonuses.map((b) => ({
+            pieces: b.pieces,
+            stats: b.stats ? [...b.stats] : [],
+            specialBonus: b.specialBonus ?? "",
+          }))
+        : prev.bonuses
+
       // If no existing pieces, create new pieces from the pattern
       if (prev.pieces.length === 0) {
         const newPieces: SetPiece[] = pattern.slotDrops.map((slotDrop) => {
@@ -134,6 +136,7 @@ export function SetCard({
           ...prev,
           dropPatternId: patternId,
           pieces: newPieces,
+          bonuses: newBonuses,
         }
       }
 
@@ -142,9 +145,13 @@ export function SetCard({
       return {
         ...prev,
         dropPatternId: patternId,
+        bonuses: newBonuses,
         pieces: prev.pieces.map((piece) => {
           // If piece has no slot but has a name, try to infer the slot
-          const slot = piece.slot || (piece.name ? inferSlotFromName(piece.name) : undefined) || ""
+          const slot =
+            piece.slot ||
+            (piece.name ? inferSlotFromName(piece.name) : undefined) ||
+            ""
           const patternDrop = patternDropBySlot.get(slot)
           if (patternDrop) {
             return {

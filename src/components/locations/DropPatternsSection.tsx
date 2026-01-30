@@ -10,7 +10,15 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import type { Slot } from "@/lib/character-constants"
+import { BONUS_STATS, type SetBonus } from "@/lib/sets-constants"
 import { api } from "../../../convex/_generated/api"
 import type { Id } from "../../../convex/_generated/dataModel"
 
@@ -43,6 +51,7 @@ export interface DropPatternData {
   _creationTime: number
   name: string
   slotDrops: SlotDrop[]
+  defaultBonuses?: SetBonus[]
   createdAt: number
   updatedAt: number
 }
@@ -50,11 +59,16 @@ export interface DropPatternData {
 interface DropPatternsSectionProps {
   patterns: DropPatternData[]
   isSubmitting: boolean
-  onCreatePattern: (name: string, slotDrops: SlotDrop[]) => void
+  onCreatePattern: (
+    name: string,
+    slotDrops: SlotDrop[],
+    defaultBonuses?: SetBonus[],
+  ) => void
   onUpdatePattern: (
     id: Id<"setDropPatterns">,
     name: string,
     slotDrops: SlotDrop[],
+    defaultBonuses?: SetBonus[],
   ) => void
   onRemovePattern: (id: Id<"setDropPatterns">) => void
 }
@@ -93,8 +107,8 @@ export function DropPatternsSection({
               key={pattern._id}
               pattern={pattern}
               isSubmitting={isSubmitting}
-              onSave={(name, slotDrops) => {
-                onUpdatePattern(pattern._id, name, slotDrops)
+              onSave={(name, slotDrops, defaultBonuses) => {
+                onUpdatePattern(pattern._id, name, slotDrops, defaultBonuses)
                 setEditingId(null)
               }}
               onCancel={() => setEditingId(null)}
@@ -115,8 +129,8 @@ export function DropPatternsSection({
       {isCreating ? (
         <DropPatternEditor
           isSubmitting={isSubmitting}
-          onSave={(name, slotDrops) => {
-            onCreatePattern(name, slotDrops)
+          onSave={(name, slotDrops, defaultBonuses) => {
+            onCreatePattern(name, slotDrops, defaultBonuses)
             setIsCreating(false)
           }}
           onCancel={() => setIsCreating(false)}
@@ -196,19 +210,49 @@ function DropPatternCard({
         </button>
       </div>
 
-      {/* Expanded slot mappings */}
+      {/* Expanded slot mappings and bonuses */}
       {isExpanded && (
-        <div className="mt-3 pl-7 space-y-1.5 border-l border-muted-foreground/20 ml-2">
-          {pattern.slotDrops.map((drop) => (
-            <div key={drop.slot} className="text-xs text-foreground/80">
-              <span className="font-medium">{drop.slot}</span>
-              <span className="text-muted-foreground"> → </span>
-              <span>
-                {locationMap.get(drop.locationId) ?? "..."} /{" "}
-                {bossMap.get(drop.bossId) ?? "..."}
-              </span>
+        <div className="mt-3 pl-7 space-y-3 border-l border-muted-foreground/20 ml-2">
+          {/* Slot mappings */}
+          <div className="space-y-1.5">
+            {pattern.slotDrops.map((drop) => (
+              <div key={drop.slot} className="text-xs text-foreground/80">
+                <span className="font-medium">{drop.slot}</span>
+                <span className="text-muted-foreground"> → </span>
+                <span>
+                  {locationMap.get(drop.locationId) ?? "..."} /{" "}
+                  {bossMap.get(drop.bossId) ?? "..."}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Default bonuses */}
+          {pattern.defaultBonuses && pattern.defaultBonuses.length > 0 && (
+            <div className="space-y-1">
+              <div className="text-[9px] uppercase tracking-widest text-muted-foreground/60 font-medium">
+                Default Bonuses
+              </div>
+              {pattern.defaultBonuses.map((bonus, idx) => (
+                <div key={idx} className="text-xs">
+                  <span
+                    className="font-bold text-[10px]"
+                    style={{ color: "var(--quality-epic)" }}
+                  >
+                    ({bonus.pieces})
+                  </span>{" "}
+                  <span className="text-muted-foreground/80">
+                    {[
+                      ...(bonus.stats || []).map(
+                        (s) => `+${s.value} ${s.stat}`,
+                      ),
+                      ...(bonus.specialBonus ? [bonus.specialBonus] : []),
+                    ].join(", ") || "—"}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -222,7 +266,11 @@ function DropPatternCard({
 interface DropPatternEditorProps {
   pattern?: DropPatternData
   isSubmitting: boolean
-  onSave: (name: string, slotDrops: SlotDrop[]) => void
+  onSave: (
+    name: string,
+    slotDrops: SlotDrop[],
+    defaultBonuses?: SetBonus[],
+  ) => void
   onCancel: () => void
 }
 
@@ -237,6 +285,9 @@ function DropPatternEditor({
     pattern?.slotDrops ?? [],
   )
   const [addingSlot, setAddingSlot] = useState(false)
+  const [defaultBonuses, setDefaultBonuses] = useState<SetBonus[]>(
+    pattern?.defaultBonuses ?? [],
+  )
 
   const locations = useQuery(api.locations.list)
   const allBosses = useQuery(api.locations.listAllBosses)
@@ -278,9 +329,74 @@ function DropPatternEditor({
     setSlotDrops(slotDrops.filter((_, i) => i !== index))
   }
 
+  // Bonus manipulation functions
+  function addBonus() {
+    setDefaultBonuses([
+      ...defaultBonuses,
+      { pieces: 2, stats: [], specialBonus: "" },
+    ])
+  }
+
+  function updateBonus(index: number, updates: Partial<SetBonus>) {
+    setDefaultBonuses(
+      defaultBonuses.map((b, i) => (i === index ? { ...b, ...updates } : b)),
+    )
+  }
+
+  function removeBonus(index: number) {
+    setDefaultBonuses(defaultBonuses.filter((_, i) => i !== index))
+  }
+
+  function addStatToBonus(bonusIndex: number) {
+    setDefaultBonuses(
+      defaultBonuses.map((b, i) =>
+        i === bonusIndex
+          ? { ...b, stats: [...(b.stats || []), { stat: "", value: 0 }] }
+          : b,
+      ),
+    )
+  }
+
+  function updateStatInBonus(
+    bonusIndex: number,
+    statIndex: number,
+    updates: Partial<{ stat: string; value: number }>,
+  ) {
+    setDefaultBonuses(
+      defaultBonuses.map((b, i) =>
+        i === bonusIndex
+          ? {
+              ...b,
+              stats: (b.stats || []).map((s, j) =>
+                j === statIndex ? { ...s, ...updates } : s,
+              ),
+            }
+          : b,
+      ),
+    )
+  }
+
+  function removeStatFromBonus(bonusIndex: number, statIndex: number) {
+    setDefaultBonuses(
+      defaultBonuses.map((b, i) =>
+        i === bonusIndex
+          ? { ...b, stats: (b.stats || []).filter((_, j) => j !== statIndex) }
+          : b,
+      ),
+    )
+  }
+
   function handleSave() {
     if (name.trim() && slotDrops.length > 0) {
-      onSave(name.trim(), slotDrops)
+      // Only include bonuses if there are any with valid data
+      const validBonuses = defaultBonuses.filter(
+        (b) => (b.stats && b.stats.length > 0) || b.specialBonus?.trim(),
+      )
+      onSave(
+        name.trim(),
+        slotDrops,
+        validBonuses.length > 0 ? validBonuses : undefined,
+      )
     }
   }
 
@@ -365,6 +481,133 @@ function DropPatternEditor({
             <span>Add slot mapping</span>
           </button>
         ) : null}
+      </div>
+
+      {/* Default bonuses */}
+      <div className="space-y-2">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">
+          Default Set Bonuses
+        </div>
+
+        <div className="space-y-2 pl-2 border-l border-primary/30">
+          {defaultBonuses.map((bonus, idx) => (
+            <div key={idx} className="space-y-1">
+              {/* Header: pieces count + delete */}
+              <div className="flex items-center gap-1">
+                <div className="flex items-center">
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: "var(--quality-epic)" }}
+                  >
+                    (
+                  </span>
+                  <select
+                    value={bonus.pieces}
+                    onChange={(e) =>
+                      updateBonus(idx, {
+                        pieces: Number.parseInt(e.target.value, 10),
+                      })
+                    }
+                    className="h-5 w-8 text-xs text-center bg-transparent border-none outline-none font-medium"
+                    style={{ color: "var(--quality-epic)" }}
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                  <span
+                    className="text-xs font-medium"
+                    style={{ color: "var(--quality-epic)" }}
+                  >
+                    )
+                  </span>
+                </div>
+                <span className="text-[9px] text-muted-foreground/50 flex-1">
+                  Set Bonus
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeBonus(idx)}
+                  className="p-0.5 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                >
+                  <Trash2 className="h-2.5 w-2.5" />
+                </button>
+              </div>
+
+              {/* Stat entries */}
+              <div className="space-y-1 pl-3 border-l border-muted-foreground/20">
+                {(bonus.stats || []).map((statEntry, statIdx) => (
+                  <div key={statIdx} className="flex items-center gap-1">
+                    <Select
+                      value={statEntry.stat}
+                      onValueChange={(value) =>
+                        updateStatInBonus(idx, statIdx, { stat: value })
+                      }
+                    >
+                      <SelectTrigger className="h-5 w-20 text-[10px] px-1 bg-muted/30">
+                        <SelectValue placeholder="Stat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BONUS_STATS.map((stat) => (
+                          <SelectItem key={stat} value={stat}>
+                            {stat}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-[9px] text-muted-foreground">+</span>
+                    <Input
+                      type="number"
+                      value={statEntry.value}
+                      onChange={(e) =>
+                        updateStatInBonus(idx, statIdx, {
+                          value: Number.parseInt(e.target.value, 10) || 0,
+                        })
+                      }
+                      className="h-5 text-[10px] px-1 py-0 w-10 bg-muted/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeStatFromBonus(idx, statIdx)}
+                      className="p-0.5 text-red-400/50 hover:text-red-400 rounded transition-colors"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => addStatToBonus(idx)}
+                  className="flex items-center gap-0.5 text-[9px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                >
+                  <Plus className="h-2.5 w-2.5" />
+                  <span>Stat</span>
+                </button>
+
+                {/* Special bonus input */}
+                <Input
+                  value={bonus.specialBonus || ""}
+                  onChange={(e) =>
+                    updateBonus(idx, { specialBonus: e.target.value })
+                  }
+                  placeholder="Special effect..."
+                  className="h-5 text-[9px] px-1 py-0 bg-muted/30 mt-1"
+                />
+              </div>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addBonus}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground transition-colors py-0.5"
+          >
+            <Plus className="h-3 w-3" />
+            <span>Add bonus</span>
+          </button>
+        </div>
       </div>
     </div>
   )
