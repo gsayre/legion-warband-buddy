@@ -31,6 +31,7 @@ import {
   type GearSet,
   type GearSetFormState,
   getMissingFields,
+  inferSlotFromName,
   QUALITY_LABELS,
   type SetPiece,
   setToFormState,
@@ -137,16 +138,24 @@ export function SetCard({
       }
 
       // If existing pieces, apply pattern drop locations to them
+      // First infer slots from piece names if not already set
       return {
         ...prev,
         dropPatternId: patternId,
         pieces: prev.pieces.map((piece) => {
-          const patternDrop = patternDropBySlot.get(piece.slot)
+          // If piece has no slot but has a name, try to infer the slot
+          const slot = piece.slot || (piece.name ? inferSlotFromName(piece.name) : undefined) || ""
+          const patternDrop = patternDropBySlot.get(slot)
           if (patternDrop) {
             return {
               ...piece,
+              slot, // Update slot if it was inferred
               dropLocation: patternDrop,
             }
+          }
+          // Still update the slot if we inferred it, even without a pattern match
+          if (slot && !piece.slot) {
+            return { ...piece, slot }
           }
           return piece
         }),
@@ -464,9 +473,18 @@ export function SetCard({
                   <div className="flex items-center gap-1">
                     <Input
                       value={piece.name}
-                      onChange={(e) =>
-                        updatePiece(idx, { name: e.target.value })
-                      }
+                      onChange={(e) => {
+                        const newName = e.target.value
+                        const updates: Partial<SetPiece> = { name: newName }
+                        // Auto-infer slot from name if slot is not already set
+                        if (!piece.slot && newName) {
+                          const inferredSlot = inferSlotFromName(newName)
+                          if (inferredSlot) {
+                            updates.slot = inferredSlot
+                          }
+                        }
+                        updatePiece(idx, updates)
+                      }}
                       placeholder="Item name"
                       className="h-6 text-xs px-1.5 py-0 flex-1 bg-muted/30"
                     />
