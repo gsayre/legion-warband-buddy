@@ -1,4 +1,187 @@
-import type { ClassName, Quality, SetQuality } from "./character-constants"
+import type { ClassName, Quality, SetQuality, Slot } from "./character-constants"
+
+// Slot inference from item names
+// Maps keywords found in item names to their corresponding gear slot
+const SLOT_KEYWORDS: Record<Slot, string[]> = {
+  Head: [
+    "helm",
+    "helmet",
+    "crown",
+    "hood",
+    "mask",
+    "cowl",
+    "coif",
+    "circlet",
+    "headguard",
+    "hat",
+    "cap",
+    "headpiece",
+    "faceguard",
+    "visor",
+    "headband",
+  ],
+  Neck: [
+    "necklace",
+    "amulet",
+    "pendant",
+    "choker",
+    "chain",
+    "collar",
+    "gorget",
+    "medallion",
+    "locket",
+    "torque",
+  ],
+  Shoulders: [
+    "shoulders",
+    "shoulderpads",
+    "shoulderguards",
+    "spaulders",
+    "pauldrons",
+    "mantle",
+    "epaulets",
+    "shoulderplates",
+  ],
+  Chest: [
+    "chest",
+    "chestpiece",
+    "chestguard",
+    "chestplate",
+    "breastplate",
+    "tunic",
+    "robe",
+    "vest",
+    "hauberk",
+    "cuirass",
+    "harness",
+    "jerkin",
+    "raiment",
+  ],
+  Back: ["cloak", "cape", "drape", "shroud", "wrap", "shawl", "blanket"],
+  Wrist: [
+    "wristguards",
+    "bracers",
+    "wristbands",
+    "vambraces",
+    "cuffs",
+    "wristwraps",
+    "bindings",
+    "armguards",
+  ],
+  Gloves: [
+    "gloves",
+    "gauntlets",
+    "handguards",
+    "grips",
+    "mitts",
+    "handwraps",
+    "fists",
+    "grasps",
+  ],
+  "Main Hand": [
+    "sword",
+    "mace",
+    "axe",
+    "staff",
+    "dagger",
+    "blade",
+    "hammer",
+    "glaive",
+    "spear",
+    "polearm",
+    "warglaive",
+    "scythe",
+    "cudgel",
+    "scepter",
+    "wand",
+    "greatsword",
+    "greataxe",
+  ],
+  "Off Hand": [
+    "shield",
+    "buckler",
+    "offhand",
+    "tome",
+    "orb",
+    "barrier",
+    "bulwark",
+    "aegis",
+    "crest",
+    "focus",
+  ],
+  Belt: [
+    "belt",
+    "girdle",
+    "waistguard",
+    "cinch",
+    "cord",
+    "sash",
+    "waistband",
+    "links",
+    "clasp",
+  ],
+  Pants: [
+    "pants",
+    "legguards",
+    "leggings",
+    "legplates",
+    "greaves",
+    "kilt",
+    "trousers",
+    "cuisses",
+    "legwraps",
+    "breeches",
+  ],
+  Boots: [
+    "boots",
+    "sabatons",
+    "treads",
+    "footwraps",
+    "footguards",
+    "slippers",
+    "stompers",
+    "footpads",
+    "striders",
+    "sandals",
+  ],
+  "Ring 1": ["ring", "band", "signet", "loop", "circle", "seal"],
+  "Ring 2": [],
+  "Trinket 1": [
+    "trinket",
+    "token",
+    "charm",
+    "talisman",
+    "badge",
+    "idol",
+    "relic",
+    "totem",
+    "libram",
+    "sigil",
+    "emblem",
+  ],
+  "Trinket 2": [],
+}
+
+/**
+ * Infers the gear slot from an item name by matching keywords.
+ * Returns the matching slot or undefined if no match is found.
+ * Note: Ring and Trinket always return "Ring 1" and "Trinket 1" respectively.
+ */
+export function inferSlotFromName(itemName: string): Slot | undefined {
+  const lowerName = itemName.toLowerCase()
+
+  for (const [slot, keywords] of Object.entries(SLOT_KEYWORDS)) {
+    for (const keyword of keywords) {
+      // Match keyword as a word boundary (not part of another word)
+      const regex = new RegExp(`\\b${keyword}s?\\b`, "i")
+      if (regex.test(lowerName)) {
+        return slot as Slot
+      }
+    }
+  }
+
+  return undefined
+}
 
 // Drop location types
 export const DROP_LOCATION_TYPES = [
@@ -43,11 +226,17 @@ export interface SetPiece {
   dropLocation?: DropLocation
 }
 
-// Set bonus
-export interface SetBonus {
-  pieces: number
+// Stat bonus entry (a single stat + value pair)
+export interface StatBonusEntry {
   stat: string
   value: number
+}
+
+// Set bonus (supports multiple stats per tier and/or special effects)
+export interface SetBonus {
+  pieces: number
+  stats?: StatBonusEntry[]
+  specialBonus?: string
 }
 
 // Available stats for set bonuses
@@ -66,6 +255,9 @@ export const BONUS_STATS = [
   "Resilience",
   "DG",
   "Expertise",
+  // Resistances
+  "Fire RES",
+  "Shadow RES",
 ] as const
 
 export type BonusStat = (typeof BONUS_STATS)[number]
@@ -137,12 +329,23 @@ export function getMissingFields(set: Partial<GearSetFormState>): string[] {
     if (!piece.slot?.trim()) missing.push(`pieces[${i}].slot`)
   })
 
-  // Check bonuses for missing stat/value/pieces count
+  // Check bonuses for missing pieces count and require at least stats or specialBonus
   set.bonuses?.forEach((bonus, i) => {
-    if (!bonus.stat?.trim()) missing.push(`bonuses[${i}].stat`)
-    if (bonus.value === undefined) missing.push(`bonuses[${i}].value`)
     if (bonus.pieces === undefined || bonus.pieces < 1)
       missing.push(`bonuses[${i}].pieces`)
+    // Must have at least one of stats or specialBonus
+    const hasStats = bonus.stats && bonus.stats.length > 0
+    const hasSpecialBonus = bonus.specialBonus?.trim()
+    if (!hasStats && !hasSpecialBonus) {
+      missing.push(`bonuses[${i}].content`)
+    }
+    // Check each stat entry if stats are provided
+    bonus.stats?.forEach((statEntry, j) => {
+      if (!statEntry.stat?.trim())
+        missing.push(`bonuses[${i}].stats[${j}].stat`)
+      if (statEntry.value === undefined)
+        missing.push(`bonuses[${i}].stats[${j}].value`)
+    })
   })
 
   return missing

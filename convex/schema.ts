@@ -95,11 +95,18 @@ export const setPieceValidator = v.object({
   dropLocation: v.optional(dropLocationValidator),
 })
 
-// Set bonus validator (stat + value for bonuses like "+20 Sta")
-export const setBonusValidator = v.object({
-  pieces: v.number(),
+// Stat bonus entry (a single stat + value pair)
+export const statBonusEntryValidator = v.object({
   stat: v.string(),
   value: v.number(),
+})
+
+// Set bonus validator (supports multiple stats per tier, e.g., "2pc: +20 Str, +15 Fire RES")
+// Also supports special/unique bonuses like "10% chance to reflect damage on block"
+export const setBonusValidator = v.object({
+  pieces: v.number(),
+  stats: v.optional(v.array(statBonusEntryValidator)),
+  specialBonus: v.optional(v.string()),
 })
 
 // Gear piece validator

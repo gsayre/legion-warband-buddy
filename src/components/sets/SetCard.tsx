@@ -102,7 +102,49 @@ export function SetCard({
   function addBonus() {
     setFormState((prev) => ({
       ...prev,
-      bonuses: [...prev.bonuses, { pieces: 2, stat: "", value: 0 }],
+      bonuses: [...prev.bonuses, { pieces: 2, stats: [], specialBonus: "" }],
+    }))
+  }
+
+  function addStatToBonus(bonusIndex: number) {
+    setFormState((prev) => ({
+      ...prev,
+      bonuses: prev.bonuses.map((b, i) =>
+        i === bonusIndex
+          ? { ...b, stats: [...(b.stats || []), { stat: "", value: 0 }] }
+          : b,
+      ),
+    }))
+  }
+
+  function updateStatInBonus(
+    bonusIndex: number,
+    statIndex: number,
+    updates: Partial<NonNullable<GearSetFormState["bonuses"][0]["stats"]>[0]>,
+  ) {
+    setFormState((prev) => ({
+      ...prev,
+      bonuses: prev.bonuses.map((b, i) =>
+        i === bonusIndex
+          ? {
+              ...b,
+              stats: (b.stats || []).map((s, j) =>
+                j === statIndex ? { ...s, ...updates } : s,
+              ),
+            }
+          : b,
+      ),
+    }))
+  }
+
+  function removeStatFromBonus(bonusIndex: number, statIndex: number) {
+    setFormState((prev) => ({
+      ...prev,
+      bonuses: prev.bonuses.map((b, i) =>
+        i === bonusIndex
+          ? { ...b, stats: (b.stats || []).filter((_, j) => j !== statIndex) }
+          : b,
+      ),
     }))
   }
 
@@ -382,87 +424,129 @@ export function SetCard({
           {(isEditing ? formState.bonuses : set.bonuses).map((bonus, idx) => (
             <div key={idx}>
               {isEditing ? (
-                <div className="flex items-center gap-1.5">
-                  {/* Pieces required */}
-                  <div className="flex items-center">
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "var(--quality-epic)" }}
-                    >
-                      (
+                <div className="space-y-1">
+                  {/* Header: pieces count + delete */}
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-center">
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: "var(--quality-epic)" }}
+                      >
+                        (
+                      </span>
+                      <select
+                        value={bonus.pieces}
+                        onChange={(e) =>
+                          updateBonus(idx, {
+                            pieces: Number.parseInt(e.target.value, 10),
+                          })
+                        }
+                        className="h-5 w-8 text-xs text-center bg-transparent border-none outline-none font-medium"
+                        style={{ color: "var(--quality-epic)" }}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                      <span
+                        className="text-xs font-medium"
+                        style={{ color: "var(--quality-epic)" }}
+                      >
+                        )
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-muted-foreground/50 flex-1">
+                      Set Bonus
                     </span>
-                    <select
-                      value={bonus.pieces}
-                      onChange={(e) =>
-                        updateBonus(idx, {
-                          pieces: Number.parseInt(e.target.value, 10),
-                        })
-                      }
-                      className="h-5 w-8 text-xs text-center bg-transparent border-none outline-none font-medium"
-                      style={{ color: "var(--quality-epic)" }}
+                    <button
+                      type="button"
+                      onClick={() => removeBonus(idx)}
+                      className="p-0.5 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
                     >
-                      {[2, 3, 4, 5, 6].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </select>
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "var(--quality-epic)" }}
-                    >
-                      )
-                    </span>
+                      <Trash2 className="h-2.5 w-2.5" />
+                    </button>
                   </div>
 
-                  {/* Stat selector */}
-                  <Select
-                    value={bonus.stat}
-                    onValueChange={(value) => updateBonus(idx, { stat: value })}
-                  >
-                    <SelectTrigger className="h-6 w-24 text-[10px] px-1.5 bg-muted/30">
-                      <SelectValue placeholder="Stat" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BONUS_STATS.map((stat) => (
-                        <SelectItem key={stat} value={stat}>
-                          {stat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  {/* Stat entries */}
+                  <div className="space-y-1 pl-3 border-l border-muted-foreground/20">
+                    {(bonus.stats || []).map((statEntry, statIdx) => (
+                      <div key={statIdx} className="flex items-center gap-1">
+                        <Select
+                          value={statEntry.stat}
+                          onValueChange={(value) =>
+                            updateStatInBonus(idx, statIdx, { stat: value })
+                          }
+                        >
+                          <SelectTrigger className="h-5 w-20 text-[10px] px-1 bg-muted/30">
+                            <SelectValue placeholder="Stat" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {BONUS_STATS.map((stat) => (
+                              <SelectItem key={stat} value={stat}>
+                                {stat}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <span className="text-[9px] text-muted-foreground">
+                          +
+                        </span>
+                        <Input
+                          type="number"
+                          value={statEntry.value}
+                          onChange={(e) =>
+                            updateStatInBonus(idx, statIdx, {
+                              value: Number.parseInt(e.target.value, 10) || 0,
+                            })
+                          }
+                          className="h-5 text-[10px] px-1 py-0 w-10 bg-muted/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeStatFromBonus(idx, statIdx)}
+                          className="p-0.5 text-red-400/50 hover:text-red-400 rounded transition-colors"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => addStatToBonus(idx)}
+                      className="flex items-center gap-0.5 text-[9px] text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                    >
+                      <Plus className="h-2.5 w-2.5" />
+                      <span>Stat</span>
+                    </button>
 
-                  {/* Value */}
-                  <span className="text-[10px] text-muted-foreground">+</span>
-                  <Input
-                    type="number"
-                    value={bonus.value}
-                    onChange={(e) =>
-                      updateBonus(idx, {
-                        value: Number.parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    className="h-6 text-xs px-1.5 py-0 w-14 bg-muted/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() => removeBonus(idx)}
-                    className="p-1 text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+                    {/* Special bonus input */}
+                    <Input
+                      value={bonus.specialBonus || ""}
+                      onChange={(e) =>
+                        updateBonus(idx, { specialBonus: e.target.value })
+                      }
+                      placeholder="Special effect..."
+                      className="h-5 text-[9px] px-1 py-0 bg-muted/30 mt-1"
+                    />
+                  </div>
                 </div>
               ) : (
-                <div className="text-xs flex items-center gap-1.5">
+                <div className="text-xs">
                   <span
                     className="font-bold text-[10px]"
                     style={{ color: "var(--quality-epic)" }}
                   >
                     ({bonus.pieces})
-                  </span>
+                  </span>{" "}
                   <span className="text-muted-foreground/80">
-                    +{bonus.value} {bonus.stat}
+                    {[
+                      ...(bonus.stats || []).map(
+                        (s) => `+${s.value} ${s.stat}`,
+                      ),
+                      ...(bonus.specialBonus ? [bonus.specialBonus] : []),
+                    ].join(", ") || "—"}
                   </span>
                 </div>
               )}

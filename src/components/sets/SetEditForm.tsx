@@ -23,6 +23,7 @@ import {
   createEmptySetFormState,
   type GearSetFormState,
   getMissingFields,
+  inferSlotFromName,
   isFieldMissing,
   QUALITY_LABELS,
   type SetBonus,
@@ -92,7 +93,49 @@ export function SetEditForm({
   function addBonus() {
     setFormState((prev) => ({
       ...prev,
-      bonuses: [...prev.bonuses, { pieces: 2, stat: "", value: 0 }],
+      bonuses: [...prev.bonuses, { pieces: 2, stats: [], specialBonus: "" }],
+    }))
+  }
+
+  function addStatToBonus(bonusIndex: number) {
+    setFormState((prev) => ({
+      ...prev,
+      bonuses: prev.bonuses.map((b, i) =>
+        i === bonusIndex
+          ? { ...b, stats: [...(b.stats || []), { stat: "", value: Number.NaN }] }
+          : b,
+      ),
+    }))
+  }
+
+  function updateStatInBonus(
+    bonusIndex: number,
+    statIndex: number,
+    updates: Partial<NonNullable<SetBonus["stats"]>[0]>,
+  ) {
+    setFormState((prev) => ({
+      ...prev,
+      bonuses: prev.bonuses.map((b, i) =>
+        i === bonusIndex
+          ? {
+              ...b,
+              stats: (b.stats || []).map((s, j) =>
+                j === statIndex ? { ...s, ...updates } : s,
+              ),
+            }
+          : b,
+      ),
+    }))
+  }
+
+  function removeStatFromBonus(bonusIndex: number, statIndex: number) {
+    setFormState((prev) => ({
+      ...prev,
+      bonuses: prev.bonuses.map((b, i) =>
+        i === bonusIndex
+          ? { ...b, stats: (b.stats || []).filter((_, j) => j !== statIndex) }
+          : b,
+      ),
     }))
   }
 
@@ -292,9 +335,20 @@ export function SetEditForm({
                     <div className="flex-1">
                       <Input
                         value={piece.name}
-                        onChange={(e) =>
-                          updatePiece(idx, { name: e.target.value })
-                        }
+                        onChange={(e) => {
+                          const newName = e.target.value
+                          const updates: Partial<SetPiece> = { name: newName }
+
+                          // Auto-infer slot if not already set
+                          if (!piece.slot) {
+                            const inferredSlot = inferSlotFromName(newName)
+                            if (inferredSlot) {
+                              updates.slot = inferredSlot
+                            }
+                          }
+
+                          updatePiece(idx, updates)
+                        }}
                         placeholder="Item Name"
                         className={cn(
                           "h-8 text-xs",
@@ -363,88 +417,139 @@ export function SetEditForm({
                 </div>
               )}
               {formState.bonuses.map((bonus, idx) => (
-                <div key={idx} className="flex gap-2 items-start">
-                  {/* Pieces count */}
-                  <div className="w-16">
-                    <select
-                      value={bonus.pieces}
-                      onChange={(e) =>
-                        updateBonus(idx, {
-                          pieces: Number.parseInt(e.target.value, 10),
-                        })
-                      }
-                      className={cn(
-                        "h-8 w-full rounded-md border border-input bg-background px-2 text-xs",
-                        isFieldMissing(
-                          `bonuses[${idx}].pieces`,
-                          missingFields,
-                        ) && "border-red-500",
-                      )}
-                    >
-                      {[2, 3, 4, 5, 6].map((n) => (
-                        <option key={n} value={n}>
-                          {n}pc
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* Stat select */}
-                  <div className="w-28">
-                    <Select
-                      value={bonus.stat}
-                      onValueChange={(value) =>
-                        updateBonus(idx, { stat: value })
-                      }
-                    >
-                      <SelectTrigger
+                <div
+                  key={idx}
+                  className="p-2 rounded border bg-muted/30 space-y-2"
+                >
+                  {/* Header row: pieces count + delete bonus */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-16">
+                      <select
+                        value={bonus.pieces}
+                        onChange={(e) =>
+                          updateBonus(idx, {
+                            pieces: Number.parseInt(e.target.value, 10),
+                          })
+                        }
                         className={cn(
-                          "h-8 text-xs",
+                          "h-7 w-full rounded-md border border-input bg-background px-2 text-xs",
                           isFieldMissing(
-                            `bonuses[${idx}].stat`,
+                            `bonuses[${idx}].pieces`,
                             missingFields,
                           ) && "border-red-500",
                         )}
                       >
-                        <SelectValue placeholder="Stat" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BONUS_STATS.map((stat) => (
-                          <SelectItem key={stat} value={stat}>
-                            {stat}
-                          </SelectItem>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+                          <option key={n} value={n}>
+                            {n}pc
+                          </option>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </select>
+                    </div>
+                    <span className="text-xs text-muted-foreground flex-1">
+                      Set Bonus
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeBonus(idx)}
+                      className="h-6 px-2"
+                    >
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
                   </div>
-                  {/* Value input */}
-                  <div className="w-20">
-                    <Input
-                      type="number"
-                      value={bonus.value}
-                      onChange={(e) =>
-                        updateBonus(idx, {
-                          value: Number.parseInt(e.target.value, 10) || 0,
-                        })
-                      }
-                      placeholder="Value"
-                      className={cn(
-                        "h-8 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
-                        isFieldMissing(
-                          `bonuses[${idx}].value`,
-                          missingFields,
-                        ) && "border-red-500",
-                      )}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeBonus(idx)}
-                    className="h-8 px-2"
+
+                  {/* Stat entries */}
+                  <div
+                    className={cn(
+                      "space-y-1 pl-2 border-l-2 border-primary/30",
+                      isFieldMissing(
+                        `bonuses[${idx}].content`,
+                        missingFields,
+                      ) && "border-red-500",
+                    )}
                   >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
+                    {(bonus.stats || []).map((statEntry, statIdx) => (
+                      <div key={statIdx} className="flex gap-2 items-center">
+                        <div className="w-28">
+                          <Select
+                            value={statEntry.stat}
+                            onValueChange={(value) =>
+                              updateStatInBonus(idx, statIdx, { stat: value })
+                            }
+                          >
+                            <SelectTrigger
+                              className={cn(
+                                "h-7 text-xs",
+                                isFieldMissing(
+                                  `bonuses[${idx}].stats[${statIdx}].stat`,
+                                  missingFields,
+                                ) && "border-red-500",
+                              )}
+                            >
+                              <SelectValue placeholder="Stat" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {BONUS_STATS.map((stat) => (
+                                <SelectItem key={stat} value={stat}>
+                                  {stat}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Input
+                          type="number"
+                          value={Number.isNaN(statEntry.value) ? "" : statEntry.value}
+                          onChange={(e) =>
+                            updateStatInBonus(idx, statIdx, {
+                              value: e.target.value === "" ? Number.NaN : Number.parseInt(e.target.value, 10),
+                            })
+                          }
+                          placeholder="Value"
+                          className={cn(
+                            "h-7 w-16 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+                            isFieldMissing(
+                              `bonuses[${idx}].stats[${statIdx}].value`,
+                              missingFields,
+                            ) && "border-red-500",
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeStatFromBonus(idx, statIdx)}
+                          className="h-6 px-1"
+                        >
+                          <Trash2 className="h-2.5 w-2.5 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => addStatToBonus(idx)}
+                      className="h-6 px-2 text-xs"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Stat
+                    </Button>
+
+                    {/* Special bonus input */}
+                    <div className="pt-1">
+                      <Input
+                        value={bonus.specialBonus || ""}
+                        onChange={(e) =>
+                          updateBonus(idx, { specialBonus: e.target.value })
+                        }
+                        placeholder="Special effect (e.g., '10% chance to reflect damage on block')"
+                        className="h-7 text-xs"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

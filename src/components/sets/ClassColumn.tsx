@@ -1,7 +1,11 @@
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CLASS_COLORS, type ClassName } from "@/lib/character-constants"
-import type { GearSet, GearSetFormState } from "@/lib/sets-constants"
+import {
+  createEmptySetFormState,
+  type GearSet,
+  type GearSetFormState,
+} from "@/lib/sets-constants"
 import { SetCard } from "./SetCard"
 import { SetEditForm } from "./SetEditForm"
 
@@ -65,6 +69,10 @@ export function ClassColumn({
         {/* New set form at top when creating */}
         {isCreating && (
           <SetEditForm
+            initialState={{
+              ...createEmptySetFormState(),
+              classes: [className],
+            }}
             onSave={onSaveNew}
             onCancel={onCancelCreate}
             isSubmitting={isSubmitting}
