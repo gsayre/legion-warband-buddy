@@ -2,7 +2,6 @@ import { useQuery } from "convex/react"
 import {
   AlertTriangle,
   Check,
-  MapPin,
   Pencil,
   Plus,
   Trash2,
@@ -82,83 +81,76 @@ export function SetCard({
     onStartEdit()
   }
 
-  // Apply a drop pattern to existing pieces - updates only drop locations, preserves names
-  function applyPatternToExistingPieces(patternId: string) {
-    if (!dropPatterns || !locations) return
-
-    const pattern = dropPatterns.find((p) => p._id === patternId)
-    if (!pattern) return
-
-    // Build a map of locationId -> location type
-    const locationTypeMap = new Map(locations.map((l) => [l._id, l.type]))
-
-    // Build a map of slot -> drop location from pattern
-    const patternDropBySlot = new Map(
-      pattern.slotDrops.map((slotDrop) => {
-        const locationType = locationTypeMap.get(slotDrop.locationId)
-        return [
-          slotDrop.slot,
-          {
-            type: locationType ?? "dungeon",
-            locationId: slotDrop.locationId,
-            bossId: slotDrop.bossId,
-          },
-        ] as const
-      }),
-    )
-
-    // Update existing pieces with drop locations from pattern
-    setFormState((prev) => ({
-      ...prev,
-      dropPatternId: patternId,
-      pieces: prev.pieces.map((piece) => {
-        const patternDrop = patternDropBySlot.get(piece.slot)
-        if (patternDrop) {
-          return {
-            ...piece,
-            dropLocation: patternDrop,
-          }
-        }
-        return piece
-      }),
-    }))
-  }
-
-  // Handle drop pattern selection
+  // Handle drop pattern selection - auto-applies to existing pieces
   function handlePatternChange(value: string) {
     const patternId = value === "none" ? undefined : value
 
     setFormState((prev) => {
-      // If selecting a pattern and no existing pieces, pre-populate from slotDrops
-      if (patternId && dropPatterns && locations && prev.pieces.length === 0) {
-        const pattern = dropPatterns.find((p) => p._id === patternId)
-        if (pattern) {
-          // Build a map of locationId -> location type
-          const locationTypeMap = new Map(locations.map((l) => [l._id, l.type]))
+      // If clearing the pattern, just update the patternId
+      if (!patternId || !dropPatterns || !locations) {
+        return { ...prev, dropPatternId: patternId }
+      }
 
-          // Create pieces from the pattern's slotDrops
-          const newPieces: SetPiece[] = pattern.slotDrops.map((slotDrop) => {
-            const locationType = locationTypeMap.get(slotDrop.locationId)
-            return {
-              slot: slotDrop.slot,
-              name: "",
-              dropLocation: {
-                type: locationType ?? "dungeon",
-                locationId: slotDrop.locationId,
-                bossId: slotDrop.bossId,
-              },
-            }
-          })
+      const pattern = dropPatterns.find((p) => p._id === patternId)
+      if (!pattern) {
+        return { ...prev, dropPatternId: patternId }
+      }
 
+      // Build a map of locationId -> location type
+      const locationTypeMap = new Map(locations.map((l) => [l._id, l.type]))
+
+      // Build a map of slot -> drop location from pattern
+      const patternDropBySlot = new Map(
+        pattern.slotDrops.map((slotDrop) => {
+          const locationType = locationTypeMap.get(slotDrop.locationId)
+          return [
+            slotDrop.slot,
+            {
+              type: locationType ?? "dungeon",
+              locationId: slotDrop.locationId,
+              bossId: slotDrop.bossId,
+            },
+          ] as const
+        }),
+      )
+
+      // If no existing pieces, create new pieces from the pattern
+      if (prev.pieces.length === 0) {
+        const newPieces: SetPiece[] = pattern.slotDrops.map((slotDrop) => {
+          const locationType = locationTypeMap.get(slotDrop.locationId)
           return {
-            ...prev,
-            dropPatternId: patternId,
-            pieces: newPieces,
+            slot: slotDrop.slot,
+            name: "",
+            dropLocation: {
+              type: locationType ?? "dungeon",
+              locationId: slotDrop.locationId,
+              bossId: slotDrop.bossId,
+            },
           }
+        })
+
+        return {
+          ...prev,
+          dropPatternId: patternId,
+          pieces: newPieces,
         }
       }
 
-      return { ...prev, dropPatternId: patternId }
+      // If existing pieces, apply pattern drop locations to them
+      return {
+        ...prev,
+        dropPatternId: patternId,
+        pieces: prev.pieces.map((piece) => {
+          const patternDrop = patternDropBySlot.get(piece.slot)
+          if (patternDrop) {
+            return {
+              ...piece,
+              dropLocation: patternDrop,
+            }
+          }
+          return piece
+        }),
+      }
     })
   }
 
@@ -444,19 +436,6 @@ export function SetCard({
                 ))}
               </SelectContent>
             </Select>
-            {formState.dropPatternId && formState.pieces.length > 0 && (
-              <button
-                type="button"
-                onClick={() =>
-                  applyPatternToExistingPieces(formState.dropPatternId!)
-                }
-                className="flex items-center gap-0.5 px-1.5 py-1 text-[10px] rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
-                title="Apply drop locations from pattern to existing pieces"
-              >
-                <MapPin className="h-3 w-3" />
-                <span>Apply</span>
-              </button>
-            )}
           </div>
         </div>
       )}
