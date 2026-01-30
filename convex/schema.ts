@@ -95,10 +95,11 @@ export const setPieceValidator = v.object({
   dropLocation: v.optional(dropLocationValidator),
 })
 
-// Stat bonus entry (a single stat + value pair)
+// Stat bonus entry (a single stat + value pair, optionally class-conditional)
 export const statBonusEntryValidator = v.object({
   stat: v.string(),
   value: v.number(),
+  forClasses: v.optional(v.array(CLASSES_VALIDATOR)),
 })
 
 // Set bonus validator (supports multiple stats per tier, e.g., "2pc: +20 Str, +15 Fire RES")

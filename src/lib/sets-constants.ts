@@ -231,10 +231,11 @@ export interface SetPiece {
   dropLocation?: DropLocation
 }
 
-// Stat bonus entry (a single stat + value pair)
+// Stat bonus entry (a single stat + value pair, optionally class-conditional)
 export interface StatBonusEntry {
   stat: string
   value: number
+  forClasses?: ClassName[]
 }
 
 // Set bonus (supports multiple stats per tier and/or special effects)

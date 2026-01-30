@@ -109,10 +109,22 @@ export function SetCard({
       )
 
       // Apply default bonuses from pattern (always replace existing bonuses)
+      // Filter stats based on the set's classes - only include stats that match
+      const setClasses = prev.classes
       const newBonuses = pattern.defaultBonuses
         ? pattern.defaultBonuses.map((b) => ({
             pieces: b.pieces,
-            stats: b.stats ? [...b.stats] : [],
+            stats: b.stats
+              ? b.stats
+                  .filter((s) => {
+                    // If no class restriction, include for all
+                    if (!s.forClasses || s.forClasses.length === 0) return true
+                    // Include if any of the set's classes match
+                    return s.forClasses.some((c) => setClasses.includes(c))
+                  })
+                  // Remove the forClasses field when copying to the set
+                  .map((s) => ({ stat: s.stat, value: s.value }))
+              : [],
             specialBonus: b.specialBonus ?? "",
           }))
         : prev.bonuses

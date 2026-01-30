@@ -17,7 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { Slot } from "@/lib/character-constants"
+import {
+  CLASS_COLORS,
+  CLASSES,
+  type ClassName,
+  type Slot,
+} from "@/lib/character-constants"
 import { BONUS_STATS, type SetBonus } from "@/lib/sets-constants"
 import { api } from "../../../convex/_generated/api"
 import type { Id } from "../../../convex/_generated/dataModel"
@@ -229,26 +234,43 @@ function DropPatternCard({
 
           {/* Default bonuses */}
           {pattern.defaultBonuses && pattern.defaultBonuses.length > 0 && (
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               <div className="text-[9px] uppercase tracking-widest text-muted-foreground/60 font-medium">
                 Default Bonuses
               </div>
               {pattern.defaultBonuses.map((bonus, idx) => (
-                <div key={idx} className="text-xs">
-                  <span
-                    className="font-bold text-[10px]"
-                    style={{ color: "var(--quality-epic)" }}
-                  >
-                    ({bonus.pieces})
-                  </span>{" "}
-                  <span className="text-muted-foreground/80">
-                    {[
-                      ...(bonus.stats || []).map(
-                        (s) => `+${s.value} ${s.stat}`,
-                      ),
-                      ...(bonus.specialBonus ? [bonus.specialBonus] : []),
-                    ].join(", ") || "—"}
-                  </span>
+                <div key={idx} className="text-xs space-y-0.5">
+                  <div>
+                    <span
+                      className="font-bold text-[10px]"
+                      style={{ color: "var(--quality-epic)" }}
+                    >
+                      ({bonus.pieces})
+                    </span>{" "}
+                    <span className="text-muted-foreground/80">
+                      {bonus.specialBonus || "Set Bonus"}
+                    </span>
+                  </div>
+                  {(bonus.stats || []).map((s, sIdx) => (
+                    <div
+                      key={sIdx}
+                      className="pl-4 text-[10px] text-muted-foreground/70"
+                    >
+                      +{s.value} {s.stat}
+                      {s.forClasses && s.forClasses.length > 0 && (
+                        <span className="ml-1">
+                          (
+                          {s.forClasses.map((c, cIdx) => (
+                            <span key={c} style={{ color: CLASS_COLORS[c] }}>
+                              {c}
+                              {cIdx < s.forClasses!.length - 1 ? ", " : ""}
+                            </span>
+                          ))}
+                          )
+                        </span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
@@ -360,7 +382,7 @@ function DropPatternEditor({
   function updateStatInBonus(
     bonusIndex: number,
     statIndex: number,
-    updates: Partial<{ stat: string; value: number }>,
+    updates: Partial<{ stat: string; value: number; forClasses: ClassName[] }>,
   ) {
     setDefaultBonuses(
       defaultBonuses.map((b, i) =>
@@ -373,6 +395,33 @@ function DropPatternEditor({
             }
           : b,
       ),
+    )
+  }
+
+  function toggleClassForStat(
+    bonusIndex: number,
+    statIndex: number,
+    className: ClassName,
+  ) {
+    setDefaultBonuses(
+      defaultBonuses.map((b, i) => {
+        if (i !== bonusIndex) return b
+        return {
+          ...b,
+          stats: (b.stats || []).map((s, j) => {
+            if (j !== statIndex) return s
+            const currentClasses = s.forClasses || []
+            const hasClass = currentClasses.includes(className)
+            const newClasses = hasClass
+              ? currentClasses.filter((c) => c !== className)
+              : [...currentClasses, className]
+            // If no classes selected, remove the forClasses field (applies to all)
+            return newClasses.length > 0
+              ? { ...s, forClasses: newClasses }
+              : { stat: s.stat, value: s.value }
+          }),
+        }
+      }),
     )
   }
 
@@ -537,44 +586,77 @@ function DropPatternEditor({
               </div>
 
               {/* Stat entries */}
-              <div className="space-y-1 pl-3 border-l border-muted-foreground/20">
+              <div className="space-y-2 pl-3 border-l border-muted-foreground/20">
                 {(bonus.stats || []).map((statEntry, statIdx) => (
-                  <div key={statIdx} className="flex items-center gap-1">
-                    <Select
-                      value={statEntry.stat}
-                      onValueChange={(value) =>
-                        updateStatInBonus(idx, statIdx, { stat: value })
-                      }
-                    >
-                      <SelectTrigger className="h-5 w-20 text-[10px] px-1 bg-muted/30">
-                        <SelectValue placeholder="Stat" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {BONUS_STATS.map((stat) => (
-                          <SelectItem key={stat} value={stat}>
-                            {stat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <span className="text-[9px] text-muted-foreground">+</span>
-                    <Input
-                      type="number"
-                      value={statEntry.value}
-                      onChange={(e) =>
-                        updateStatInBonus(idx, statIdx, {
-                          value: Number.parseInt(e.target.value, 10) || 0,
-                        })
-                      }
-                      className="h-5 text-[10px] px-1 py-0 w-10 bg-muted/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeStatFromBonus(idx, statIdx)}
-                      className="p-0.5 text-red-400/50 hover:text-red-400 rounded transition-colors"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
+                  <div key={statIdx} className="space-y-1">
+                    <div className="flex items-center gap-1">
+                      <Select
+                        value={statEntry.stat}
+                        onValueChange={(value) =>
+                          updateStatInBonus(idx, statIdx, { stat: value })
+                        }
+                      >
+                        <SelectTrigger className="h-5 w-20 text-[10px] px-1 bg-muted/30">
+                          <SelectValue placeholder="Stat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {BONUS_STATS.map((stat) => (
+                            <SelectItem key={stat} value={stat}>
+                              {stat}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-[9px] text-muted-foreground">
+                        +
+                      </span>
+                      <Input
+                        type="number"
+                        value={statEntry.value}
+                        onChange={(e) =>
+                          updateStatInBonus(idx, statIdx, {
+                            value: Number.parseInt(e.target.value, 10) || 0,
+                          })
+                        }
+                        className="h-5 text-[10px] px-1 py-0 w-10 bg-muted/30 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeStatFromBonus(idx, statIdx)}
+                        className="p-0.5 text-red-400/50 hover:text-red-400 rounded transition-colors"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                    {/* Class selector for this stat */}
+                    <div className="flex items-center gap-0.5 pl-1">
+                      <span className="text-[8px] text-muted-foreground/50 mr-1">
+                        {statEntry.forClasses?.length ? "For:" : "All classes"}
+                      </span>
+                      {CLASSES.map((className) => {
+                        const isSelected =
+                          statEntry.forClasses?.includes(className) ?? false
+                        return (
+                          <button
+                            key={className}
+                            type="button"
+                            onClick={() =>
+                              toggleClassForStat(idx, statIdx, className)
+                            }
+                            className="text-[8px] px-1 py-0.5 rounded transition-all font-medium"
+                            style={{
+                              color: CLASS_COLORS[className],
+                              opacity: isSelected ? 1 : 0.25,
+                              background: isSelected
+                                ? "rgba(255,255,255,0.08)"
+                                : "transparent",
+                            }}
+                          >
+                            {className.slice(0, 3)}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 ))}
                 <button
