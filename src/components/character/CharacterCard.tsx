@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils"
 
 interface CharacterCardProps {
   id: string
+  name?: string
   className: ClassName
   adventureGear: GearPiece[]
   dungeonGear: GearPiece[]
@@ -27,6 +28,7 @@ interface CharacterCardProps {
 
 export function CharacterCard({
   id,
+  name,
   className,
   adventureGear,
   dungeonGear,
@@ -45,7 +47,12 @@ export function CharacterCard({
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{className}</CardTitle>
+          <div>
+            <CardTitle className="text-lg">{name || className}</CardTitle>
+            {name && (
+              <span className="text-xs text-muted-foreground">{className}</span>
+            )}
+          </div>
           <div className="text-2xl font-bold text-primary">
             {avgIlvl > 0 ? avgIlvl.toFixed(0) : "-"}
           </div>

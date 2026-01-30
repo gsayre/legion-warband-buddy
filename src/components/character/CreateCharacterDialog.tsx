@@ -7,6 +7,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { CLASSES, type ClassName } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
 
@@ -14,7 +16,7 @@ interface CreateCharacterDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   existingClasses: ClassName[]
-  onCreateCharacter: (className: ClassName) => Promise<void>
+  onCreateCharacter: (className: ClassName, name?: string) => Promise<void>
   isSubmitting?: boolean
 }
 
@@ -26,6 +28,7 @@ export function CreateCharacterDialog({
   isSubmitting,
 }: CreateCharacterDialogProps) {
   const [selectedClass, setSelectedClass] = useState<ClassName | null>(null)
+  const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
 
   const handleCreate = async () => {
@@ -33,8 +36,9 @@ export function CreateCharacterDialog({
 
     setError(null)
     try {
-      await onCreateCharacter(selectedClass)
+      await onCreateCharacter(selectedClass, name.trim() || undefined)
       setSelectedClass(null)
+      setName("")
       onOpenChange(false)
     } catch (err) {
       setError(
@@ -45,6 +49,7 @@ export function CreateCharacterDialog({
 
   const handleClose = () => {
     setSelectedClass(null)
+    setName("")
     setError(null)
     onOpenChange(false)
   }
@@ -60,6 +65,17 @@ export function CreateCharacterDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="character-name">Character Name (optional)</Label>
+            <Input
+              id="character-name"
+              placeholder="e.g., Thorin, Luna, Shadow..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             {CLASSES.map((cls) => {
               const isDisabled = existingClasses.includes(cls)

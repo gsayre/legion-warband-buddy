@@ -7,11 +7,13 @@ import { calculateAverageIlvl, isStatCapped } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
 
 interface CharacterHeaderProps {
+  name?: string
   className: ClassName
   gear: GearPiece[]
   hitPercent: number
   expertisePercent: number
   onUpdateStats: (updates: {
+    name?: string
     hitPercent?: number
     expertisePercent?: number
   }) => Promise<void>
@@ -24,6 +26,116 @@ interface InlineEditableStatProps {
   isCapped: boolean
   onSave: (newValue: number) => Promise<void>
   isSubmitting?: boolean
+}
+
+interface InlineEditableNameProps {
+  name?: string
+  className: ClassName
+  onSave: (newName: string) => Promise<void>
+  isSubmitting?: boolean
+}
+
+function InlineEditableName({
+  name,
+  className,
+  onSave,
+  isSubmitting,
+}: InlineEditableNameProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [editValue, setEditValue] = useState(name || "")
+  const [isHovered, setIsHovered] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  const handleStartEdit = () => {
+    setEditValue(name || "")
+    setIsEditing(true)
+  }
+
+  const handleSave = async () => {
+    await onSave(editValue.trim())
+    setIsEditing(false)
+  }
+
+  const handleCancel = () => {
+    setEditValue(name || "")
+    setIsEditing(false)
+  }
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSave()
+    } else if (e.key === "Escape") {
+      handleCancel()
+    }
+  }
+
+  const displayName = name || className
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2">
+        <Input
+          ref={inputRef}
+          type="text"
+          placeholder={className}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleInputKeyDown}
+          onBlur={handleSave}
+          disabled={isSubmitting}
+          className="w-48 h-10 text-xl font-bold"
+        />
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8"
+          onClick={handleSave}
+          disabled={isSubmitting}
+        >
+          <Check className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8"
+          onClick={handleCancel}
+          disabled={isSubmitting}
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        className="flex items-center gap-2 group cursor-pointer bg-transparent border-none p-0"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={handleStartEdit}
+      >
+        <h2 className="text-2xl font-bold">{displayName}</h2>
+        <Pencil
+          className={cn(
+            "h-4 w-4 text-muted-foreground transition-opacity",
+            isHovered ? "opacity-100" : "opacity-0",
+          )}
+        />
+      </button>
+      {name && (
+        <span className="text-sm text-muted-foreground">({className})</span>
+      )}
+    </div>
+  )
 }
 
 function InlineEditableStat({
@@ -138,6 +250,7 @@ function InlineEditableStat({
 }
 
 export function CharacterHeader({
+  name,
   className,
   gear,
   hitPercent,
@@ -148,6 +261,10 @@ export function CharacterHeader({
   const avgIlvl = calculateAverageIlvl(gear)
   const hitCapped = isStatCapped("hit", hitPercent)
   const expertiseCapped = isStatCapped("expertise", expertisePercent)
+
+  const handleUpdateName = async (newName: string) => {
+    await onUpdateStats({ name: newName || undefined })
+  }
 
   const handleUpdateHit = async (newValue: number) => {
     await onUpdateStats({ hitPercent: newValue })
@@ -160,9 +277,14 @@ export function CharacterHeader({
   return (
     <div className="bg-muted rounded-lg p-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        {/* Class and iLvl */}
+        {/* Name/Class and iLvl */}
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold">{className}</h2>
+          <InlineEditableName
+            name={name}
+            className={className}
+            onSave={handleUpdateName}
+            isSubmitting={isSubmitting}
+          />
           <div className="text-2xl font-bold text-primary">
             {avgIlvl > 0 ? avgIlvl.toFixed(1) : "-"}
             <span className="text-sm text-muted-foreground ml-1">ilvl</span>

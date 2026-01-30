@@ -133,6 +133,7 @@ export const getByClass = query({
 export const create = mutation({
   args: {
     className: CLASSES_VALIDATOR,
+    name: v.optional(v.string()),
     hitPercent: v.optional(v.number()),
     expertisePercent: v.optional(v.number()),
   },
@@ -157,6 +158,7 @@ export const create = mutation({
     const now = Date.now()
     return await ctx.db.insert("characters", {
       userId: identity.subject,
+      name: args.name,
       className: args.className,
       hitPercent: args.hitPercent ?? 0,
       expertisePercent: args.expertisePercent ?? 0,
@@ -168,10 +170,11 @@ export const create = mutation({
   },
 })
 
-// Update character hit/expertise percentages
+// Update character name/stats
 export const update = mutation({
   args: {
     id: v.id("characters"),
+    name: v.optional(v.string()),
     hitPercent: v.optional(v.number()),
     expertisePercent: v.optional(v.number()),
   },
@@ -187,6 +190,9 @@ export const update = mutation({
     }
 
     const updates: Record<string, unknown> = { updatedAt: Date.now() }
+    if (args.name !== undefined) {
+      updates.name = args.name
+    }
     if (args.hitPercent !== undefined) {
       updates.hitPercent = args.hitPercent
     }

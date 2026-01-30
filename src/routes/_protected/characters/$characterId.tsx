@@ -84,6 +84,7 @@ function CharacterDetail() {
   const legendaries = getLegendaries(currentGear)
 
   async function handleUpdateStats(updates: {
+    name?: string
     hitPercent?: number
     expertisePercent?: number
   }) {
@@ -96,7 +97,7 @@ function CharacterDetail() {
         ...updates,
       })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update stats")
+      setError(err instanceof Error ? err.message : "Failed to update")
     } finally {
       setIsSubmitting(false)
     }
@@ -170,8 +171,12 @@ function CharacterDetail() {
     <div className="min-h-screen p-8">
       <header className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold">{character.className}</h1>
-          <p className="text-muted-foreground">Character Details</p>
+          <h1 className="text-3xl font-bold">
+            {character.name || character.className}
+          </h1>
+          <p className="text-muted-foreground">
+            {character.name ? `${character.className} - ` : ""}Character Details
+          </p>
         </div>
         <div className="flex items-center gap-4">
           <Button variant="destructive" onClick={() => setIsDeleting(true)}>
@@ -215,6 +220,7 @@ function CharacterDetail() {
         {/* Right column - Character Info + Gear List */}
         <div className="space-y-6">
           <CharacterHeader
+            name={character.name}
             className={character.className as ClassName}
             gear={currentGear}
             hitPercent={character.hitPercent}

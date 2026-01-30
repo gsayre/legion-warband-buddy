@@ -36,10 +36,10 @@ function Dashboard() {
   )
   const hasAllClasses = existingClasses.length === CLASSES.length
 
-  async function handleCreateCharacter(className: ClassName) {
+  async function handleCreateCharacter(className: ClassName, name?: string) {
     setIsSubmitting(true)
     try {
-      await createCharacter({ className })
+      await createCharacter({ className, name })
     } finally {
       setIsSubmitting(false)
     }
@@ -162,6 +162,7 @@ function Dashboard() {
                   <CharacterCard
                     key={character._id}
                     id={character._id}
+                    name={character.name}
                     className={character.className as ClassName}
                     adventureGear={character.adventureGear}
                     dungeonGear={character.dungeonGear}

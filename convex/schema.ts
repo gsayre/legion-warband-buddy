@@ -194,6 +194,7 @@ export default defineSchema({
   // Characters table (warband gear tracking)
   characters: defineTable({
     userId: v.string(),
+    name: v.optional(v.string()),
     className: CLASSES_VALIDATOR,
     hitPercent: v.number(),
     expertisePercent: v.number(),
