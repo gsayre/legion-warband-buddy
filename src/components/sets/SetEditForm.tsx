@@ -29,6 +29,7 @@ import {
   QUALITY_LABELS,
   type SetBonus,
   type SetPiece,
+  usesStructuredLocations,
 } from "@/lib/sets-constants"
 import { cn } from "@/lib/utils"
 import { api } from "../../../convex/_generated/api"
@@ -54,7 +55,32 @@ export function SetEditForm({
   // Fetch drop patterns for the selector
   const dropPatterns = useQuery(api.locations.listDropPatterns)
 
+  // Fetch locations to look up types when applying drop patterns
+  const locations = useQuery(api.locations.list)
+
   const missingFields = getMissingFields(formState)
+
+  // Check if any piece is in an incomplete editing state
+  function isPieceIncomplete(piece: SetPiece): boolean {
+    // Piece with no slot or name is incomplete
+    if (!piece.slot || !piece.name) return true
+
+    // Check drop location if present
+    const drop = piece.dropLocation
+    if (drop?.type) {
+      if (usesStructuredLocations(drop.type)) {
+        // Structured: need locationId and bossId
+        if (!drop.locationId || !drop.bossId) return true
+      } else {
+        // Freeform: need name
+        if (!drop.name) return true
+      }
+    }
+
+    return false
+  }
+
+  const hasIncompletePieces = formState.pieces.some(isPieceIncomplete)
 
   function updateField<K extends keyof GearSetFormState>(
     key: K,
@@ -276,12 +302,51 @@ export function SetEditForm({
             <Label>Drop Pattern (optional)</Label>
             <Select
               value={formState.dropPatternId ?? "none"}
-              onValueChange={(value) =>
-                updateField(
-                  "dropPatternId",
-                  value === "none" ? undefined : value,
-                )
-              }
+              onValueChange={(value) => {
+                const patternId = value === "none" ? undefined : value
+
+                // Update the dropPatternId
+                setFormState((prev) => {
+                  // If selecting a pattern, pre-populate pieces from its slotDrops
+                  if (patternId && dropPatterns && locations) {
+                    const pattern = dropPatterns.find(
+                      (p) => p._id === patternId,
+                    )
+                    if (pattern) {
+                      // Build a map of locationId -> location type
+                      const locationTypeMap = new Map(
+                        locations.map((l) => [l._id, l.type]),
+                      )
+
+                      // Create pieces from the pattern's slotDrops
+                      const newPieces: SetPiece[] = pattern.slotDrops.map(
+                        (slotDrop) => {
+                          const locationType = locationTypeMap.get(
+                            slotDrop.locationId,
+                          )
+                          return {
+                            slot: slotDrop.slot,
+                            name: "",
+                            dropLocation: {
+                              type: locationType ?? "dungeon",
+                              locationId: slotDrop.locationId,
+                              bossId: slotDrop.bossId,
+                            },
+                          }
+                        },
+                      )
+
+                      return {
+                        ...prev,
+                        dropPatternId: patternId,
+                        pieces: newPieces,
+                      }
+                    }
+                  }
+
+                  return { ...prev, dropPatternId: patternId }
+                })
+              }}
             >
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="Select drop pattern..." />
@@ -624,7 +689,16 @@ export function SetEditForm({
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
-            <Button type="submit" size="sm" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isSubmitting || hasIncompletePieces}
+              title={
+                hasIncompletePieces
+                  ? "Complete all pieces before saving"
+                  : undefined
+              }
+            >
               {isSubmitting ? "Saving..." : "Save"}
             </Button>
             <Button
