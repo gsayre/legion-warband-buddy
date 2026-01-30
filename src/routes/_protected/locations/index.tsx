@@ -1,6 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery } from "convex/react"
 import { useEffect, useState } from "react"
+import {
+  type DropPatternData,
+  DropPatternsSection,
+  type SlotDrop,
+} from "@/components/locations/DropPatternsSection"
 import { LocationTypeSection } from "@/components/locations/LocationTypeSection"
 import { LOCATION_TYPES, type LocationType } from "@/lib/sets-constants"
 import { api } from "../../../../convex/_generated/api"
@@ -35,6 +40,7 @@ function LocationsPage() {
   const navigate = useNavigate()
   const user = useQuery(api.users.getMe)
   const locations = useQuery(api.locations.list)
+  const dropPatterns = useQuery(api.locations.listDropPatterns)
 
   const createLocation = useMutation(api.locations.create)
   const updateLocation = useMutation(api.locations.update)
@@ -42,6 +48,9 @@ function LocationsPage() {
   const addBoss = useMutation(api.locations.addBoss)
   const updateBoss = useMutation(api.locations.updateBoss)
   const removeBoss = useMutation(api.locations.removeBoss)
+  const createDropPattern = useMutation(api.locations.createDropPattern)
+  const updateDropPattern = useMutation(api.locations.updateDropPattern)
+  const removeDropPattern = useMutation(api.locations.removeDropPattern)
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -127,7 +136,57 @@ function LocationsPage() {
     }
   }
 
-  if (locations === undefined || user === undefined) {
+  async function handleCreateDropPattern(name: string, slotDrops: SlotDrop[]) {
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      await createDropPattern({ name, slotDrops })
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create drop pattern",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleUpdateDropPattern(
+    id: Id<"setDropPatterns">,
+    name: string,
+    slotDrops: SlotDrop[],
+  ) {
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      await updateDropPattern({ id, name, slotDrops })
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to update drop pattern",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleRemoveDropPattern(id: Id<"setDropPatterns">) {
+    setIsSubmitting(true)
+    setError(null)
+    try {
+      await removeDropPattern({ id })
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete drop pattern",
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (
+    locations === undefined ||
+    user === undefined ||
+    dropPatterns === undefined
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-pulse text-muted-foreground">Loading...</div>
@@ -194,6 +253,15 @@ function LocationsPage() {
           />
         ))}
       </div>
+
+      {/* Drop Patterns Section */}
+      <DropPatternsSection
+        patterns={dropPatterns as DropPatternData[]}
+        isSubmitting={isSubmitting}
+        onCreatePattern={handleCreateDropPattern}
+        onUpdatePattern={handleUpdateDropPattern}
+        onRemovePattern={handleRemoveDropPattern}
+      />
     </div>
   )
 }

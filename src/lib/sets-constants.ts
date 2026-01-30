@@ -1,4 +1,9 @@
-import type { ClassName, Quality, SetQuality, Slot } from "./character-constants"
+import type {
+  ClassName,
+  Quality,
+  SetQuality,
+  Slot,
+} from "./character-constants"
 
 // Slot inference from item names
 // Maps keywords found in item names to their corresponding gear slot
@@ -269,6 +274,7 @@ export interface GearSet {
   quality: SetQuality
   classes: ClassName[]
   dropLocations?: DropLocation[]
+  dropPatternId?: string
   pieces: SetPiece[]
   bonuses: SetBonus[]
   requiredLevel?: number
@@ -282,6 +288,7 @@ export interface GearSetFormState {
   quality: SetQuality | ""
   classes: ClassName[]
   dropLocations: DropLocation[]
+  dropPatternId: string | undefined
   pieces: SetPiece[]
   bonuses: SetBonus[]
   requiredLevel: number | undefined
@@ -294,6 +301,7 @@ export function createEmptySetFormState(): GearSetFormState {
     quality: "",
     classes: [],
     dropLocations: [],
+    dropPatternId: undefined,
     pieces: [],
     bonuses: [],
     requiredLevel: undefined,
@@ -307,6 +315,7 @@ export function setToFormState(set: GearSet): GearSetFormState {
     quality: set.quality,
     classes: [...set.classes],
     dropLocations: set.dropLocations ? [...set.dropLocations] : [],
+    dropPatternId: set.dropPatternId,
     pieces: [...set.pieces],
     bonuses: [...set.bonuses],
     requiredLevel: set.requiredLevel,

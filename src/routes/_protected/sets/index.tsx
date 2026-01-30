@@ -76,6 +76,9 @@ function SetsPage() {
                 state.dropLocations,
               ) as Parameters<typeof createSet>[0]["dropLocations"])
             : undefined,
+        dropPatternId: state.dropPatternId as Parameters<
+          typeof createSet
+        >[0]["dropPatternId"],
         pieces: convertPiecesForMutation(state.pieces) as Parameters<
           typeof createSet
         >[0]["pieces"],
@@ -111,6 +114,9 @@ function SetsPage() {
                 state.dropLocations,
               ) as Parameters<typeof updateSet>[0]["dropLocations"])
             : undefined,
+        dropPatternId: (state.dropPatternId ?? null) as Parameters<
+          typeof updateSet
+        >[0]["dropPatternId"],
         pieces: convertPiecesForMutation(state.pieces) as Parameters<
           typeof updateSet
         >[0]["pieces"],

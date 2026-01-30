@@ -34,6 +34,7 @@ export const list = query({
       quality: SET_QUALITY_VALIDATOR,
       classes: v.array(CLASSES_VALIDATOR),
       dropLocations: v.optional(v.array(dropLocationValidator)),
+      dropPatternId: v.optional(v.id("setDropPatterns")),
       pieces: v.array(setPieceValidator),
       bonuses: v.array(setBonusValidator),
       requiredLevel: v.optional(v.number()),
@@ -57,6 +58,7 @@ export const listByClass = query({
       quality: SET_QUALITY_VALIDATOR,
       classes: v.array(CLASSES_VALIDATOR),
       dropLocations: v.optional(v.array(dropLocationValidator)),
+      dropPatternId: v.optional(v.id("setDropPatterns")),
       pieces: v.array(setPieceValidator),
       bonuses: v.array(setBonusValidator),
       requiredLevel: v.optional(v.number()),
@@ -81,6 +83,7 @@ export const get = query({
       quality: SET_QUALITY_VALIDATOR,
       classes: v.array(CLASSES_VALIDATOR),
       dropLocations: v.optional(v.array(dropLocationValidator)),
+      dropPatternId: v.optional(v.id("setDropPatterns")),
       pieces: v.array(setPieceValidator),
       bonuses: v.array(setBonusValidator),
       requiredLevel: v.optional(v.number()),
@@ -101,6 +104,7 @@ export const create = mutation({
     quality: SET_QUALITY_VALIDATOR,
     classes: v.array(CLASSES_VALIDATOR),
     dropLocations: v.optional(v.array(dropLocationValidator)),
+    dropPatternId: v.optional(v.id("setDropPatterns")),
     pieces: v.array(setPieceValidator),
     bonuses: v.array(setBonusValidator),
     requiredLevel: v.optional(v.number()),
@@ -123,6 +127,14 @@ export const create = mutation({
       )
     }
 
+    // Validate dropPatternId if provided
+    if (args.dropPatternId) {
+      const pattern = await ctx.db.get(args.dropPatternId)
+      if (!pattern) {
+        throw new Error("Drop pattern not found")
+      }
+    }
+
     const now = Date.now()
     return await ctx.db.insert("sets", {
       ...args,
@@ -140,6 +152,7 @@ export const update = mutation({
     quality: v.optional(SET_QUALITY_VALIDATOR),
     classes: v.optional(v.array(CLASSES_VALIDATOR)),
     dropLocations: v.optional(v.array(dropLocationValidator)),
+    dropPatternId: v.optional(v.union(v.id("setDropPatterns"), v.null())),
     pieces: v.optional(v.array(setPieceValidator)),
     bonuses: v.optional(v.array(setBonusValidator)),
     requiredLevel: v.optional(v.number()),
@@ -169,11 +182,25 @@ export const update = mutation({
       }
     }
 
+    // Validate dropPatternId if provided (and not null)
+    if (args.dropPatternId) {
+      const pattern = await ctx.db.get(args.dropPatternId)
+      if (!pattern) {
+        throw new Error("Drop pattern not found")
+      }
+    }
+
     const { id, ...updates } = args
-    await ctx.db.patch(id, {
+    // Handle null dropPatternId (to clear the pattern)
+    const patchData: Record<string, unknown> = {
       ...updates,
       updatedAt: Date.now(),
-    })
+    }
+    if (args.dropPatternId === null) {
+      patchData.dropPatternId = undefined
+    }
+
+    await ctx.db.patch(id, patchData)
 
     return null
   },

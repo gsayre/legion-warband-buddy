@@ -1,3 +1,4 @@
+import { useQuery } from "convex/react"
 import { AlertTriangle, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ import {
   type SetPiece,
 } from "@/lib/sets-constants"
 import { cn } from "@/lib/utils"
+import { api } from "../../../convex/_generated/api"
 import { DropLocationPicker } from "./DropLocationPicker"
 
 interface SetEditFormProps {
@@ -48,6 +50,9 @@ export function SetEditForm({
   const [formState, setFormState] = useState<GearSetFormState>(
     initialState ?? createEmptySetFormState(),
   )
+
+  // Fetch drop patterns for the selector
+  const dropPatterns = useQuery(api.locations.listDropPatterns)
 
   const missingFields = getMissingFields(formState)
 
@@ -102,7 +107,10 @@ export function SetEditForm({
       ...prev,
       bonuses: prev.bonuses.map((b, i) =>
         i === bonusIndex
-          ? { ...b, stats: [...(b.stats || []), { stat: "", value: Number.NaN }] }
+          ? {
+              ...b,
+              stats: [...(b.stats || []), { stat: "", value: Number.NaN }],
+            }
           : b,
       ),
     }))
@@ -261,6 +269,41 @@ export function SetEditForm({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Drop Pattern */}
+          <div className="space-y-1">
+            <Label>Drop Pattern (optional)</Label>
+            <Select
+              value={formState.dropPatternId ?? "none"}
+              onValueChange={(value) =>
+                updateField(
+                  "dropPatternId",
+                  value === "none" ? undefined : value,
+                )
+              }
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Select drop pattern..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <span className="text-muted-foreground">
+                    No pattern (manual entry)
+                  </span>
+                </SelectItem>
+                {dropPatterns?.map((pattern) => (
+                  <SelectItem key={pattern._id} value={pattern._id}>
+                    {pattern.name} ({pattern.slotDrops.length} slots)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formState.dropPatternId && (
+              <p className="text-xs text-muted-foreground">
+                Piece drop locations will be inherited from this pattern.
+              </p>
+            )}
           </div>
 
           {/* Pieces */}
@@ -501,10 +544,15 @@ export function SetEditForm({
                         </div>
                         <Input
                           type="number"
-                          value={Number.isNaN(statEntry.value) ? "" : statEntry.value}
+                          value={
+                            Number.isNaN(statEntry.value) ? "" : statEntry.value
+                          }
                           onChange={(e) =>
                             updateStatInBonus(idx, statIdx, {
-                              value: e.target.value === "" ? Number.NaN : Number.parseInt(e.target.value, 10),
+                              value:
+                                e.target.value === ""
+                                  ? Number.NaN
+                                  : Number.parseInt(e.target.value, 10),
                             })
                           }
                           placeholder="Value"

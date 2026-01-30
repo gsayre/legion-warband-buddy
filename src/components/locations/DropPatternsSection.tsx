@@ -1,0 +1,573 @@
+import { useQuery } from "convex/react"
+import {
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react"
+import { useState } from "react"
+import { Input } from "@/components/ui/input"
+import type { Slot } from "@/lib/character-constants"
+import { api } from "../../../convex/_generated/api"
+import type { Id } from "../../../convex/_generated/dataModel"
+
+// Slots that are typically part of tier sets (excluding duplicate slots and accessories)
+const TIER_SET_SLOTS: Slot[] = [
+  "Head",
+  "Shoulders",
+  "Chest",
+  "Gloves",
+  "Pants",
+  "Boots",
+  "Belt",
+  "Wrist",
+  "Back",
+  "Neck",
+  "Main Hand",
+  "Off Hand",
+  "Ring 1",
+  "Trinket 1",
+]
+
+export interface SlotDrop {
+  slot: string
+  locationId: Id<"locations">
+  bossId: Id<"bosses">
+}
+
+export interface DropPatternData {
+  _id: Id<"setDropPatterns">
+  _creationTime: number
+  name: string
+  slotDrops: SlotDrop[]
+  createdAt: number
+  updatedAt: number
+}
+
+interface DropPatternsSectionProps {
+  patterns: DropPatternData[]
+  isSubmitting: boolean
+  onCreatePattern: (name: string, slotDrops: SlotDrop[]) => void
+  onUpdatePattern: (
+    id: Id<"setDropPatterns">,
+    name: string,
+    slotDrops: SlotDrop[],
+  ) => void
+  onRemovePattern: (id: Id<"setDropPatterns">) => void
+}
+
+export function DropPatternsSection({
+  patterns,
+  isSubmitting,
+  onCreatePattern,
+  onUpdatePattern,
+  onRemovePattern,
+}: DropPatternsSectionProps) {
+  const [isCreating, setIsCreating] = useState(false)
+  const [editingId, setEditingId] = useState<Id<"setDropPatterns"> | null>(null)
+
+  return (
+    <div className="space-y-4 mt-12">
+      {/* Section header */}
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-semibold">Drop Patterns</h2>
+        <div className="flex-1 h-px bg-gradient-to-r from-muted-foreground/30 to-transparent" />
+        <span className="text-sm text-muted-foreground">
+          {patterns.length} {patterns.length === 1 ? "pattern" : "patterns"}
+        </span>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        Define which slots drop from which bosses. Assign a pattern to multiple
+        sets to share drop locations.
+      </p>
+
+      {/* Patterns list */}
+      <div className="space-y-3">
+        {patterns.map((pattern) =>
+          editingId === pattern._id ? (
+            <DropPatternEditor
+              key={pattern._id}
+              pattern={pattern}
+              isSubmitting={isSubmitting}
+              onSave={(name, slotDrops) => {
+                onUpdatePattern(pattern._id, name, slotDrops)
+                setEditingId(null)
+              }}
+              onCancel={() => setEditingId(null)}
+            />
+          ) : (
+            <DropPatternCard
+              key={pattern._id}
+              pattern={pattern}
+              isSubmitting={isSubmitting}
+              onEdit={() => setEditingId(pattern._id)}
+              onRemove={() => onRemovePattern(pattern._id)}
+            />
+          ),
+        )}
+      </div>
+
+      {/* Create new pattern */}
+      {isCreating ? (
+        <DropPatternEditor
+          isSubmitting={isSubmitting}
+          onSave={(name, slotDrops) => {
+            onCreatePattern(name, slotDrops)
+            setIsCreating(false)
+          }}
+          onCancel={() => setIsCreating(false)}
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => setIsCreating(true)}
+          className="flex items-center gap-2 w-full p-3 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/10 hover:bg-muted/20 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="text-sm">Add new drop pattern</span>
+        </button>
+      )}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Drop Pattern Card (read-only view)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface DropPatternCardProps {
+  pattern: DropPatternData
+  isSubmitting: boolean
+  onEdit: () => void
+  onRemove: () => void
+}
+
+function DropPatternCard({
+  pattern,
+  isSubmitting,
+  onEdit,
+  onRemove,
+}: DropPatternCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const locations = useQuery(api.locations.list)
+  const allBosses = useQuery(api.locations.listAllBosses)
+
+  // Build lookup maps
+  const locationMap = new Map(locations?.map((l) => [l._id, l.name]) ?? [])
+  const bossMap = new Map(allBosses?.map((b) => [b._id, b.name]) ?? [])
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-card/30 p-4 group">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="p-1 rounded hover:bg-muted text-muted-foreground"
+        >
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </button>
+        <span className="text-sm font-semibold flex-1">{pattern.name}</span>
+        <span className="text-xs text-muted-foreground">
+          {pattern.slotDrops.length} slots
+        </span>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="p-1 rounded hover:bg-muted text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          disabled={isSubmitting}
+          className="p-1 rounded hover:bg-red-500/10 text-red-400/70 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      {/* Expanded slot mappings */}
+      {isExpanded && (
+        <div className="mt-3 pl-7 space-y-1.5 border-l border-muted-foreground/20 ml-2">
+          {pattern.slotDrops.map((drop) => (
+            <div key={drop.slot} className="text-xs text-foreground/80">
+              <span className="font-medium">{drop.slot}</span>
+              <span className="text-muted-foreground"> → </span>
+              <span>
+                {locationMap.get(drop.locationId) ?? "..."} /{" "}
+                {bossMap.get(drop.bossId) ?? "..."}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Drop Pattern Editor (create/edit form)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface DropPatternEditorProps {
+  pattern?: DropPatternData
+  isSubmitting: boolean
+  onSave: (name: string, slotDrops: SlotDrop[]) => void
+  onCancel: () => void
+}
+
+function DropPatternEditor({
+  pattern,
+  isSubmitting,
+  onSave,
+  onCancel,
+}: DropPatternEditorProps) {
+  const [name, setName] = useState(pattern?.name ?? "")
+  const [slotDrops, setSlotDrops] = useState<SlotDrop[]>(
+    pattern?.slotDrops ?? [],
+  )
+  const [addingSlot, setAddingSlot] = useState(false)
+
+  const locations = useQuery(api.locations.list)
+  const allBosses = useQuery(api.locations.listAllBosses)
+
+  // Build lookup maps
+  const locationMap = new Map(locations?.map((l) => [l._id, l.name]) ?? [])
+  const bossMap = new Map(allBosses?.map((b) => [b._id, b]) ?? [])
+
+  // Get bosses for a specific location
+  function getBossesForLocation(locationId: Id<"locations">) {
+    return allBosses?.filter((b) => b.locationId === locationId) ?? []
+  }
+
+  // Slots that haven't been added yet
+  const availableSlots = TIER_SET_SLOTS.filter(
+    (slot) => !slotDrops.some((d) => d.slot === slot),
+  )
+
+  function handleAddSlotDrop(
+    slot: string,
+    locationId: Id<"locations">,
+    bossId: Id<"bosses">,
+  ) {
+    setSlotDrops([...slotDrops, { slot, locationId, bossId }])
+    setAddingSlot(false)
+  }
+
+  function handleUpdateSlotDrop(
+    index: number,
+    locationId: Id<"locations">,
+    bossId: Id<"bosses">,
+  ) {
+    const updated = [...slotDrops]
+    updated[index] = { ...updated[index], locationId, bossId }
+    setSlotDrops(updated)
+  }
+
+  function handleRemoveSlotDrop(index: number) {
+    setSlotDrops(slotDrops.filter((_, i) => i !== index))
+  }
+
+  function handleSave() {
+    if (name.trim() && slotDrops.length > 0) {
+      onSave(name.trim(), slotDrops)
+    }
+  }
+
+  const canSave = name.trim() && slotDrops.length > 0
+
+  return (
+    <div className="rounded-lg border border-primary/30 bg-card/50 p-4 space-y-4">
+      {/* Pattern name */}
+      <div className="flex items-center gap-2">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Pattern name (e.g., MC Tier 1)"
+          className="h-8 text-sm flex-1"
+          autoFocus
+        />
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={isSubmitting || !canSave}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-green-500/20 hover:bg-green-500/30 text-green-400 text-sm font-medium transition-colors disabled:opacity-30"
+        >
+          <Check className="h-4 w-4" />
+          <span>Save</span>
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm font-medium transition-colors"
+        >
+          <X className="h-4 w-4" />
+          <span>Cancel</span>
+        </button>
+      </div>
+
+      {/* Slot mappings */}
+      <div className="space-y-2">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">
+          Slot Mappings
+        </div>
+
+        {slotDrops.length === 0 && !addingSlot ? (
+          <div className="text-xs text-muted-foreground/50 italic">
+            No slot mappings added yet
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {slotDrops.map((drop, index) => (
+              <SlotDropRow
+                key={drop.slot}
+                drop={drop}
+                locations={locations ?? []}
+                getBossesForLocation={getBossesForLocation}
+                locationMap={locationMap}
+                bossMap={bossMap}
+                onUpdate={(locationId, bossId) =>
+                  handleUpdateSlotDrop(index, locationId, bossId)
+                }
+                onRemove={() => handleRemoveSlotDrop(index)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Add new slot mapping */}
+        {addingSlot ? (
+          <NewSlotDropRow
+            availableSlots={availableSlots}
+            locations={locations ?? []}
+            getBossesForLocation={getBossesForLocation}
+            onAdd={handleAddSlotDrop}
+            onCancel={() => setAddingSlot(false)}
+          />
+        ) : availableSlots.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setAddingSlot(true)}
+            className="flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Add slot mapping</span>
+          </button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Slot Drop Row (existing mapping)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface SlotDropRowProps {
+  drop: SlotDrop
+  locations: Array<{ _id: Id<"locations">; name: string }>
+  getBossesForLocation: (locationId: Id<"locations">) => Array<{
+    _id: Id<"bosses">
+    name: string
+    locationId: Id<"locations">
+  }>
+  locationMap: Map<Id<"locations">, string>
+  bossMap: Map<
+    Id<"bosses">,
+    { _id: Id<"bosses">; name: string; locationId: Id<"locations"> }
+  >
+  onUpdate: (locationId: Id<"locations">, bossId: Id<"bosses">) => void
+  onRemove: () => void
+}
+
+function SlotDropRow({
+  drop,
+  locations,
+  getBossesForLocation,
+  onUpdate,
+  onRemove,
+}: SlotDropRowProps) {
+  const [selectedLocationId, setSelectedLocationId] = useState<
+    Id<"locations"> | ""
+  >(drop.locationId)
+  const [selectedBossId, setSelectedBossId] = useState<Id<"bosses"> | "">(
+    drop.bossId,
+  )
+
+  const bossesForLocation = selectedLocationId
+    ? getBossesForLocation(selectedLocationId)
+    : []
+
+  function handleLocationChange(locationId: Id<"locations">) {
+    setSelectedLocationId(locationId)
+    setSelectedBossId("")
+  }
+
+  function handleBossChange(bossId: Id<"bosses">) {
+    setSelectedBossId(bossId)
+    if (selectedLocationId) {
+      onUpdate(selectedLocationId, bossId)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="w-24 font-medium text-foreground/80">{drop.slot}</span>
+      <select
+        value={selectedLocationId}
+        onChange={(e) =>
+          handleLocationChange(e.target.value as Id<"locations">)
+        }
+        className="flex-1 h-7 px-2 rounded border border-border/50 bg-background/50 text-xs"
+      >
+        <option value="">Select location...</option>
+        {locations.map((loc) => (
+          <option key={loc._id} value={loc._id}>
+            {loc.name}
+          </option>
+        ))}
+      </select>
+      <select
+        value={selectedBossId}
+        onChange={(e) => handleBossChange(e.target.value as Id<"bosses">)}
+        disabled={!selectedLocationId}
+        className="flex-1 h-7 px-2 rounded border border-border/50 bg-background/50 text-xs disabled:opacity-50"
+      >
+        <option value="">Select boss...</option>
+        {bossesForLocation.map((boss) => (
+          <option key={boss._id} value={boss._id}>
+            {boss.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={onRemove}
+        className="p-1 rounded hover:bg-red-500/10 text-red-400/70 hover:text-red-400 transition-all"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// New Slot Drop Row (adding new mapping)
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface NewSlotDropRowProps {
+  availableSlots: Slot[]
+  locations: Array<{ _id: Id<"locations">; name: string }>
+  getBossesForLocation: (locationId: Id<"locations">) => Array<{
+    _id: Id<"bosses">
+    name: string
+    locationId: Id<"locations">
+  }>
+  onAdd: (
+    slot: string,
+    locationId: Id<"locations">,
+    bossId: Id<"bosses">,
+  ) => void
+  onCancel: () => void
+}
+
+function NewSlotDropRow({
+  availableSlots,
+  locations,
+  getBossesForLocation,
+  onAdd,
+  onCancel,
+}: NewSlotDropRowProps) {
+  const [selectedSlot, setSelectedSlot] = useState<string>("")
+  const [selectedLocationId, setSelectedLocationId] = useState<
+    Id<"locations"> | ""
+  >("")
+  const [selectedBossId, setSelectedBossId] = useState<Id<"bosses"> | "">("")
+
+  const bossesForLocation = selectedLocationId
+    ? getBossesForLocation(selectedLocationId)
+    : []
+
+  function handleLocationChange(locationId: Id<"locations">) {
+    setSelectedLocationId(locationId)
+    setSelectedBossId("")
+  }
+
+  function handleAdd() {
+    if (selectedSlot && selectedLocationId && selectedBossId) {
+      onAdd(selectedSlot, selectedLocationId, selectedBossId)
+    }
+  }
+
+  const canAdd = selectedSlot && selectedLocationId && selectedBossId
+
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <select
+        value={selectedSlot}
+        onChange={(e) => setSelectedSlot(e.target.value)}
+        className="w-24 h-7 px-2 rounded border border-border/50 bg-background/50 text-xs"
+      >
+        <option value="">Slot...</option>
+        {availableSlots.map((slot) => (
+          <option key={slot} value={slot}>
+            {slot}
+          </option>
+        ))}
+      </select>
+      <select
+        value={selectedLocationId}
+        onChange={(e) =>
+          handleLocationChange(e.target.value as Id<"locations">)
+        }
+        className="flex-1 h-7 px-2 rounded border border-border/50 bg-background/50 text-xs"
+      >
+        <option value="">Select location...</option>
+        {locations.map((loc) => (
+          <option key={loc._id} value={loc._id}>
+            {loc.name}
+          </option>
+        ))}
+      </select>
+      <select
+        value={selectedBossId}
+        onChange={(e) => setSelectedBossId(e.target.value as Id<"bosses">)}
+        disabled={!selectedLocationId}
+        className="flex-1 h-7 px-2 rounded border border-border/50 bg-background/50 text-xs disabled:opacity-50"
+      >
+        <option value="">Select boss...</option>
+        {bossesForLocation.map((boss) => (
+          <option key={boss._id} value={boss._id}>
+            {boss.name}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={handleAdd}
+        disabled={!canAdd}
+        className="p-1 rounded bg-green-500/20 hover:bg-green-500/30 text-green-400 transition-colors disabled:opacity-30"
+      >
+        <Check className="h-3.5 w-3.5" />
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        className="p-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
+}

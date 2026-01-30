@@ -109,6 +109,13 @@ export const setBonusValidator = v.object({
   specialBonus: v.optional(v.string()),
 })
 
+// Slot drop mapping for drop patterns (which slot drops from which location/boss)
+export const slotDropValidator = v.object({
+  slot: v.string(),
+  locationId: v.id("locations"),
+  bossId: v.id("bosses"),
+})
+
 // Gear piece validator
 const gearPieceValidator = v.object({
   slot: SLOTS_VALIDATOR,
@@ -204,6 +211,7 @@ export default defineSchema({
     quality: SET_QUALITY_VALIDATOR,
     classes: v.array(CLASSES_VALIDATOR),
     dropLocations: v.optional(v.array(dropLocationValidator)),
+    dropPatternId: v.optional(v.id("setDropPatterns")),
     pieces: v.array(setPieceValidator),
     bonuses: v.array(setBonusValidator),
     requiredLevel: v.optional(v.number()),
@@ -231,4 +239,12 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_location", ["locationId"]),
+
+  // Set drop patterns (defines which slots drop from which bosses for tier sets)
+  setDropPatterns: defineTable({
+    name: v.string(),
+    slotDrops: v.array(slotDropValidator),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
 })

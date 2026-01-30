@@ -1,7 +1,7 @@
 import { v } from "convex/values"
 import type { MutationCtx, QueryCtx } from "./_generated/server"
 import { mutation, query } from "./_generated/server"
-import { LOCATION_TYPE_VALIDATOR } from "./schema"
+import { LOCATION_TYPE_VALIDATOR, slotDropValidator } from "./schema"
 
 // Helper to require admin access
 async function requireAdmin(ctx: MutationCtx | QueryCtx) {
@@ -132,6 +132,25 @@ export const getBoss = query({
   ),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.id)
+  },
+})
+
+// List all bosses (for drop pattern editor)
+export const listAllBosses = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("bosses"),
+      _creationTime: v.number(),
+      locationId: v.id("locations"),
+      name: v.string(),
+      order: v.optional(v.number()),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    return await ctx.db.query("bosses").collect()
   },
 })
 
@@ -308,6 +327,148 @@ export const removeBoss = mutation({
     const existing = await ctx.db.get(args.id)
     if (!existing) {
       throw new Error("Boss not found")
+    }
+
+    await ctx.db.delete(args.id)
+    return null
+  },
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Drop Pattern Queries
+// ═══════════════════════════════════════════════════════════════════════════
+
+// List all drop patterns
+export const listDropPatterns = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("setDropPatterns"),
+      _creationTime: v.number(),
+      name: v.string(),
+      slotDrops: v.array(slotDropValidator),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }),
+  ),
+  handler: async (ctx) => {
+    return await ctx.db.query("setDropPatterns").collect()
+  },
+})
+
+// Get a single drop pattern by ID
+export const getDropPattern = query({
+  args: { id: v.id("setDropPatterns") },
+  returns: v.union(
+    v.object({
+      _id: v.id("setDropPatterns"),
+      _creationTime: v.number(),
+      name: v.string(),
+      slotDrops: v.array(slotDropValidator),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id)
+  },
+})
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Drop Pattern Mutations (admin only)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Create a new drop pattern
+export const createDropPattern = mutation({
+  args: {
+    name: v.string(),
+    slotDrops: v.array(slotDropValidator),
+  },
+  returns: v.id("setDropPatterns"),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    // Check for duplicate name
+    const existing = await ctx.db
+      .query("setDropPatterns")
+      .withIndex("by_name", (q) => q.eq("name", args.name))
+      .unique()
+
+    if (existing) {
+      throw new Error(`A drop pattern named "${args.name}" already exists`)
+    }
+
+    const now = Date.now()
+    return await ctx.db.insert("setDropPatterns", {
+      name: args.name,
+      slotDrops: args.slotDrops,
+      createdAt: now,
+      updatedAt: now,
+    })
+  },
+})
+
+// Update a drop pattern
+export const updateDropPattern = mutation({
+  args: {
+    id: v.id("setDropPatterns"),
+    name: v.optional(v.string()),
+    slotDrops: v.optional(v.array(slotDropValidator)),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const existing = await ctx.db.get(args.id)
+    if (!existing) {
+      throw new Error("Drop pattern not found")
+    }
+
+    // Check for duplicate name if name is being changed
+    if (args.name && args.name !== existing.name) {
+      const newName = args.name
+      const duplicate = await ctx.db
+        .query("setDropPatterns")
+        .withIndex("by_name", (q) => q.eq("name", newName))
+        .unique()
+
+      if (duplicate) {
+        throw new Error(`A drop pattern named "${newName}" already exists`)
+      }
+    }
+
+    const { id, ...updates } = args
+    await ctx.db.patch(id, {
+      ...updates,
+      updatedAt: Date.now(),
+    })
+
+    return null
+  },
+})
+
+// Delete a drop pattern
+export const removeDropPattern = mutation({
+  args: { id: v.id("setDropPatterns") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx)
+
+    const existing = await ctx.db.get(args.id)
+    if (!existing) {
+      throw new Error("Drop pattern not found")
+    }
+
+    // Check if any sets are using this pattern
+    const setsUsingPattern = await ctx.db.query("sets").collect()
+    const usedBy = setsUsingPattern.filter(
+      (set) => set.dropPatternId === args.id,
+    )
+
+    if (usedBy.length > 0) {
+      const setNames = usedBy.map((s) => s.name).join(", ")
+      throw new Error(`Cannot delete drop pattern. It is used by: ${setNames}`)
     }
 
     await ctx.db.delete(args.id)
