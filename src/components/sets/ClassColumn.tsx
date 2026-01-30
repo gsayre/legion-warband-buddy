@@ -7,7 +7,6 @@ import {
   type GearSetFormState,
 } from "@/lib/sets-constants"
 import { SetCard } from "./SetCard"
-import { SetEditForm } from "./SetEditForm"
 
 interface ClassColumnProps {
   className: ClassName
@@ -66,16 +65,19 @@ export function ClassColumn({
 
       {/* Content area */}
       <div className="flex-1 space-y-5 overflow-y-auto">
-        {/* New set form at top when creating */}
+        {/* New set card at top when creating */}
         {isCreating && (
-          <SetEditForm
-            initialState={{
+          <SetCard
+            isAdmin={isAdmin}
+            isEditing={true}
+            onStartEdit={() => {}}
+            onCancelEdit={onCancelCreate}
+            onSave={onSaveNew}
+            isSubmitting={isSubmitting}
+            initialFormState={{
               ...createEmptySetFormState(),
               classes: [className],
             }}
-            onSave={onSaveNew}
-            onCancel={onCancelCreate}
-            isSubmitting={isSubmitting}
           />
         )}
 

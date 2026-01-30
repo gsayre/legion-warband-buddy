@@ -1,4 +1,13 @@
-import { AlertTriangle, Check, Pencil, Plus, Trash2, X } from "lucide-react"
+import { useQuery } from "convex/react"
+import {
+  AlertTriangle,
+  Check,
+  MapPin,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from "lucide-react"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import {
@@ -19,22 +28,26 @@ import {
 } from "@/lib/character-constants"
 import {
   BONUS_STATS,
+  createEmptySetFormState,
   type GearSet,
   type GearSetFormState,
   getMissingFields,
   QUALITY_LABELS,
+  type SetPiece,
   setToFormState,
 } from "@/lib/sets-constants"
+import { api } from "../../../convex/_generated/api"
 import { DropLocationDisplay, DropLocationPicker } from "./DropLocationPicker"
 
 interface SetCardProps {
-  set: GearSet
+  set?: GearSet
   isAdmin: boolean
   isEditing: boolean
   onStartEdit: () => void
   onCancelEdit: () => void
   onSave: (state: GearSetFormState) => void
   isSubmitting: boolean
+  initialFormState?: GearSetFormState
 }
 
 export function SetCard({
@@ -45,19 +58,108 @@ export function SetCard({
   onCancelEdit,
   onSave,
   isSubmitting,
+  initialFormState,
 }: SetCardProps) {
+  const isNewSet = !set
+
   const [formState, setFormState] = useState<GearSetFormState>(() =>
-    setToFormState(set),
+    set ? setToFormState(set) : (initialFormState ?? createEmptySetFormState()),
   )
 
+  // Fetch drop patterns and locations for the selector
+  const dropPatterns = useQuery(api.locations.listDropPatterns)
+  const locations = useQuery(api.locations.list)
+
   const missingFields = getMissingFields(
-    isEditing ? formState : setToFormState(set),
+    isEditing || isNewSet ? formState : setToFormState(set),
   )
   const hasWarning = missingFields.length > 0
 
   function handleStartEdit() {
-    setFormState(setToFormState(set))
+    if (set) {
+      setFormState(setToFormState(set))
+    }
     onStartEdit()
+  }
+
+  // Apply a drop pattern to existing pieces - updates only drop locations, preserves names
+  function applyPatternToExistingPieces(patternId: string) {
+    if (!dropPatterns || !locations) return
+
+    const pattern = dropPatterns.find((p) => p._id === patternId)
+    if (!pattern) return
+
+    // Build a map of locationId -> location type
+    const locationTypeMap = new Map(locations.map((l) => [l._id, l.type]))
+
+    // Build a map of slot -> drop location from pattern
+    const patternDropBySlot = new Map(
+      pattern.slotDrops.map((slotDrop) => {
+        const locationType = locationTypeMap.get(slotDrop.locationId)
+        return [
+          slotDrop.slot,
+          {
+            type: locationType ?? "dungeon",
+            locationId: slotDrop.locationId,
+            bossId: slotDrop.bossId,
+          },
+        ] as const
+      }),
+    )
+
+    // Update existing pieces with drop locations from pattern
+    setFormState((prev) => ({
+      ...prev,
+      dropPatternId: patternId,
+      pieces: prev.pieces.map((piece) => {
+        const patternDrop = patternDropBySlot.get(piece.slot)
+        if (patternDrop) {
+          return {
+            ...piece,
+            dropLocation: patternDrop,
+          }
+        }
+        return piece
+      }),
+    }))
+  }
+
+  // Handle drop pattern selection
+  function handlePatternChange(value: string) {
+    const patternId = value === "none" ? undefined : value
+
+    setFormState((prev) => {
+      // If selecting a pattern and no existing pieces, pre-populate from slotDrops
+      if (patternId && dropPatterns && locations && prev.pieces.length === 0) {
+        const pattern = dropPatterns.find((p) => p._id === patternId)
+        if (pattern) {
+          // Build a map of locationId -> location type
+          const locationTypeMap = new Map(locations.map((l) => [l._id, l.type]))
+
+          // Create pieces from the pattern's slotDrops
+          const newPieces: SetPiece[] = pattern.slotDrops.map((slotDrop) => {
+            const locationType = locationTypeMap.get(slotDrop.locationId)
+            return {
+              slot: slotDrop.slot,
+              name: "",
+              dropLocation: {
+                type: locationType ?? "dungeon",
+                locationId: slotDrop.locationId,
+                bossId: slotDrop.bossId,
+              },
+            }
+          })
+
+          return {
+            ...prev,
+            dropPatternId: patternId,
+            pieces: newPieces,
+          }
+        }
+      }
+
+      return { ...prev, dropPatternId: patternId }
+    })
   }
 
   function handleSave() {
@@ -167,7 +269,8 @@ export function SetCard({
     }))
   }
 
-  const displayData = isEditing ? formState : set
+  const isEditMode = isEditing || isNewSet
+  const displayData = isEditMode ? formState : set!
   const qualityColor = displayData.quality
     ? QUALITY_COLORS[displayData.quality as SetQuality]
     : undefined
@@ -182,7 +285,7 @@ export function SetCard({
           <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
         )}
 
-        {isEditing ? (
+        {isEditMode ? (
           <Input
             value={formState.name}
             onChange={(e) =>
@@ -197,12 +300,12 @@ export function SetCard({
             className="font-bold text-sm tracking-wide"
             style={{ color: qualityColor }}
           >
-            {set.name}
+            {set!.name}
           </span>
         )}
 
         {/* Quality selector / badge */}
-        {isEditing ? (
+        {isEditMode ? (
           <div className="flex gap-0.5 ml-1">
             {SET_QUALITY.map((q) => (
               <button
@@ -233,14 +336,14 @@ export function SetCard({
               background: "rgba(255,255,255,0.06)",
             }}
           >
-            {QUALITY_LABELS[set.quality]}
+            {QUALITY_LABELS[set!.quality]}
           </span>
         )}
 
         {/* Admin actions */}
         {isAdmin && (
           <div className="ml-auto flex gap-1">
-            {isEditing ? (
+            {isEditMode ? (
               <>
                 <button
                   type="button"
@@ -279,7 +382,7 @@ export function SetCard({
         <div className="text-[9px] uppercase tracking-widest text-muted-foreground/60 font-medium mb-1">
           Classes
         </div>
-        {isEditing ? (
+        {isEditMode ? (
           <div className="flex flex-wrap gap-1">
             {CLASSES.map((className) => (
               <button
@@ -301,7 +404,7 @@ export function SetCard({
           </div>
         ) : (
           <div className="flex flex-wrap gap-1.5">
-            {set.classes.map((className) => (
+            {set!.classes.map((className) => (
               <span
                 key={className}
                 className="text-[10px] font-medium"
@@ -315,6 +418,50 @@ export function SetCard({
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════
+          DROP PATTERN SECTION (editing only)
+          ═══════════════════════════════════════════════════════════════════ */}
+      {isEditMode && (
+        <div className="mb-3">
+          <div className="text-[9px] uppercase tracking-widest text-muted-foreground/60 font-medium mb-1">
+            Drop Pattern
+          </div>
+          <div className="flex items-center gap-1">
+            <Select
+              value={formState.dropPatternId ?? "none"}
+              onValueChange={handlePatternChange}
+            >
+              <SelectTrigger className="h-6 text-xs flex-1 bg-muted/30">
+                <SelectValue placeholder="Select pattern..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <span className="text-muted-foreground">None</span>
+                </SelectItem>
+                {dropPatterns?.map((pattern) => (
+                  <SelectItem key={pattern._id} value={pattern._id}>
+                    {pattern.name} ({pattern.slotDrops.length} slots)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {formState.dropPatternId && formState.pieces.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  applyPatternToExistingPieces(formState.dropPatternId!)
+                }
+                className="flex items-center gap-0.5 px-1.5 py-1 text-[10px] rounded bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
+                title="Apply drop locations from pattern to existing pieces"
+              >
+                <MapPin className="h-3 w-3" />
+                <span>Apply</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════
           PIECES SECTION
           ═══════════════════════════════════════════════════════════════════ */}
       <div className="mb-3">
@@ -323,7 +470,7 @@ export function SetCard({
             Pieces
           </div>
           <div className="flex-1 h-px bg-gradient-to-r from-muted-foreground/20 to-transparent" />
-          {!isEditing && (
+          {!isEditMode && set && (
             <span className="text-[9px] text-muted-foreground/50">
               {set.pieces.length} items
             </span>
@@ -331,9 +478,9 @@ export function SetCard({
         </div>
 
         <div className="space-y-1.5 pl-2 border-l border-muted-foreground/20">
-          {(isEditing ? formState.pieces : set.pieces).map((piece, idx) => (
+          {(isEditMode ? formState.pieces : set!.pieces).map((piece, idx) => (
             <div key={idx}>
-              {isEditing ? (
+              {isEditMode ? (
                 <div className="space-y-1">
                   <div className="flex items-center gap-1">
                     <Input
@@ -396,7 +543,7 @@ export function SetCard({
             </div>
           ))}
 
-          {isEditing && (
+          {isEditMode && (
             <button
               type="button"
               onClick={addPiece}
@@ -421,9 +568,9 @@ export function SetCard({
         </div>
 
         <div className="space-y-1.5 pl-2 border-l border-primary/30">
-          {(isEditing ? formState.bonuses : set.bonuses).map((bonus, idx) => (
+          {(isEditMode ? formState.bonuses : set!.bonuses).map((bonus, idx) => (
             <div key={idx}>
-              {isEditing ? (
+              {isEditMode ? (
                 <div className="space-y-1">
                   {/* Header: pieces count + delete */}
                   <div className="flex items-center gap-1">
@@ -553,7 +700,7 @@ export function SetCard({
             </div>
           ))}
 
-          {isEditing && (
+          {isEditMode && (
             <button
               type="button"
               onClick={addBonus}
@@ -569,12 +716,12 @@ export function SetCard({
       {/* ═══════════════════════════════════════════════════════════════════
           REQUIRED LEVEL (if present)
           ═══════════════════════════════════════════════════════════════════ */}
-      {(isEditing || set.requiredLevel) && (
+      {(isEditMode || set?.requiredLevel) && (
         <div className="flex items-center gap-2 pt-2 border-t border-muted-foreground/10">
           <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50 font-medium">
             Req. Level
           </span>
-          {isEditing ? (
+          {isEditMode ? (
             <Input
               type="number"
               min={1}
@@ -592,7 +739,7 @@ export function SetCard({
             />
           ) : (
             <span className="text-xs text-muted-foreground/70">
-              {set.requiredLevel}
+              {set!.requiredLevel}
             </span>
           )}
         </div>
