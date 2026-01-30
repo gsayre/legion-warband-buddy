@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react"
-import { AlertTriangle, Plus, Trash2 } from "lucide-react"
+import { AlertTriangle, MapPin, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -189,6 +189,48 @@ export function SetEditForm({
     }))
   }
 
+  // Apply a drop pattern to existing pieces - updates only drop locations, preserves names
+  function applyPatternToExistingPieces(patternId: string) {
+    if (!dropPatterns || !locations) return
+
+    const pattern = dropPatterns.find((p) => p._id === patternId)
+    if (!pattern) return
+
+    // Build a map of locationId -> location type
+    const locationTypeMap = new Map(locations.map((l) => [l._id, l.type]))
+
+    // Build a map of slot -> drop location from pattern
+    const patternDropBySlot = new Map(
+      pattern.slotDrops.map((slotDrop) => {
+        const locationType = locationTypeMap.get(slotDrop.locationId)
+        return [
+          slotDrop.slot,
+          {
+            type: locationType ?? "dungeon",
+            locationId: slotDrop.locationId,
+            bossId: slotDrop.bossId,
+          },
+        ] as const
+      }),
+    )
+
+    // Update existing pieces with drop locations from pattern
+    setFormState((prev) => ({
+      ...prev,
+      dropPatternId: patternId,
+      pieces: prev.pieces.map((piece) => {
+        const patternDrop = patternDropBySlot.get(piece.slot)
+        if (patternDrop) {
+          return {
+            ...piece,
+            dropLocation: patternDrop,
+          }
+        }
+        return piece
+      }),
+    }))
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     onSave(formState)
@@ -300,73 +342,97 @@ export function SetEditForm({
           {/* Drop Pattern */}
           <div className="space-y-1">
             <Label>Drop Pattern (optional)</Label>
-            <Select
-              value={formState.dropPatternId ?? "none"}
-              onValueChange={(value) => {
-                const patternId = value === "none" ? undefined : value
+            <div className="flex gap-2">
+              <Select
+                value={formState.dropPatternId ?? "none"}
+                onValueChange={(value) => {
+                  const patternId = value === "none" ? undefined : value
 
-                // Update the dropPatternId
-                setFormState((prev) => {
-                  // If selecting a pattern, pre-populate pieces from its slotDrops
-                  if (patternId && dropPatterns && locations) {
-                    const pattern = dropPatterns.find(
-                      (p) => p._id === patternId,
-                    )
-                    if (pattern) {
-                      // Build a map of locationId -> location type
-                      const locationTypeMap = new Map(
-                        locations.map((l) => [l._id, l.type]),
+                  // Update the dropPatternId
+                  setFormState((prev) => {
+                    // If selecting a pattern and no existing pieces, pre-populate from slotDrops
+                    if (
+                      patternId &&
+                      dropPatterns &&
+                      locations &&
+                      prev.pieces.length === 0
+                    ) {
+                      const pattern = dropPatterns.find(
+                        (p) => p._id === patternId,
                       )
+                      if (pattern) {
+                        // Build a map of locationId -> location type
+                        const locationTypeMap = new Map(
+                          locations.map((l) => [l._id, l.type]),
+                        )
 
-                      // Create pieces from the pattern's slotDrops
-                      const newPieces: SetPiece[] = pattern.slotDrops.map(
-                        (slotDrop) => {
-                          const locationType = locationTypeMap.get(
-                            slotDrop.locationId,
-                          )
-                          return {
-                            slot: slotDrop.slot,
-                            name: "",
-                            dropLocation: {
-                              type: locationType ?? "dungeon",
-                              locationId: slotDrop.locationId,
-                              bossId: slotDrop.bossId,
-                            },
-                          }
-                        },
-                      )
+                        // Create pieces from the pattern's slotDrops
+                        const newPieces: SetPiece[] = pattern.slotDrops.map(
+                          (slotDrop) => {
+                            const locationType = locationTypeMap.get(
+                              slotDrop.locationId,
+                            )
+                            return {
+                              slot: slotDrop.slot,
+                              name: "",
+                              dropLocation: {
+                                type: locationType ?? "dungeon",
+                                locationId: slotDrop.locationId,
+                                bossId: slotDrop.bossId,
+                              },
+                            }
+                          },
+                        )
 
-                      return {
-                        ...prev,
-                        dropPatternId: patternId,
-                        pieces: newPieces,
+                        return {
+                          ...prev,
+                          dropPatternId: patternId,
+                          pieces: newPieces,
+                        }
                       }
                     }
-                  }
 
-                  return { ...prev, dropPatternId: patternId }
-                })
-              }}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select drop pattern..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">
-                  <span className="text-muted-foreground">
-                    No pattern (manual entry)
-                  </span>
-                </SelectItem>
-                {dropPatterns?.map((pattern) => (
-                  <SelectItem key={pattern._id} value={pattern._id}>
-                    {pattern.name} ({pattern.slotDrops.length} slots)
+                    return { ...prev, dropPatternId: patternId }
+                  })
+                }}
+              >
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue placeholder="Select drop pattern..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">
+                      No pattern (manual entry)
+                    </span>
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  {dropPatterns?.map((pattern) => (
+                    <SelectItem key={pattern._id} value={pattern._id}>
+                      {pattern.name} ({pattern.slotDrops.length} slots)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formState.dropPatternId && formState.pieces.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    applyPatternToExistingPieces(formState.dropPatternId!)
+                  }
+                  className="h-8 px-2 text-xs"
+                  title="Apply drop locations from pattern to existing pieces (matches by slot)"
+                >
+                  <MapPin className="h-3 w-3 mr-1" />
+                  Apply
+                </Button>
+              )}
+            </div>
             {formState.dropPatternId && (
               <p className="text-xs text-muted-foreground">
-                Piece drop locations will be inherited from this pattern.
+                {formState.pieces.length > 0
+                  ? "Click 'Apply' to update existing piece drop locations from this pattern."
+                  : "Piece drop locations will be inherited from this pattern."}
               </p>
             )}
           </div>
