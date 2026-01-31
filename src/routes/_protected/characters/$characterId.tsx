@@ -236,6 +236,7 @@ function CharacterDetail() {
 
           <GearListTable
             gear={currentGear}
+            characterClass={character.className as ClassName}
             onEdit={handleEditFromTable}
             isSubmitting={isSubmitting}
           />
@@ -283,6 +284,7 @@ function CharacterDetail() {
           {editingGearPiece && (
             <GearRowEditable
               gear={editingGearPiece}
+              characterClass={character.className as ClassName}
               onSave={handleUpdateGear}
               onCancel={() => setEditingSlot(null)}
               isSubmitting={isSubmitting}

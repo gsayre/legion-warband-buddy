@@ -1,3 +1,4 @@
+import { useQuery } from "convex/react"
 import { Check, Pencil, X } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type {
+  ClassName,
   GearPiece,
   Quality,
   SecondaryStat,
@@ -25,11 +27,13 @@ import type {
 } from "@/lib/character-constants"
 import { QUALITY, SECONDARY_STATS } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
+import { api } from "../../../convex/_generated/api"
 
 const NONE_VALUE = "__none__"
 
 interface GearListTableProps {
   gear: GearPiece[]
+  characterClass: ClassName
   onEdit: (slot: Slot, updates: Partial<GearPiece>) => Promise<void>
   isSubmitting?: boolean
 }
@@ -87,11 +91,13 @@ interface EditingState {
 function GearRow({
   gear,
   displayLabel,
+  classSets,
   onEdit,
   isSubmitting,
 }: {
   gear: GearPiece
   displayLabel: string
+  classSets: { _id: string; name: string; quality: string }[] | undefined
   onEdit: (updates: Partial<GearPiece>) => Promise<void>
   isSubmitting?: boolean
 }) {
@@ -250,15 +256,28 @@ function GearRow({
           </Select>
         </TableCell>
         <TableCell>
-          <Input
-            value={editState.setBonus}
-            onChange={(e) =>
-              setEditState({ ...editState, setBonus: e.target.value })
+          <Select
+            value={editState.setBonus || NONE_VALUE}
+            onValueChange={(v) =>
+              setEditState({
+                ...editState,
+                setBonus: v === NONE_VALUE ? "" : v,
+              })
             }
-            placeholder="Set"
-            className="h-8 w-24 text-sm"
-            disabled={isSubmitting}
-          />
+            disabled={isSubmitting || !classSets}
+          >
+            <SelectTrigger className="h-8 w-28 text-sm">
+              <SelectValue placeholder="-" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
+              {classSets?.map((set) => (
+                <SelectItem key={set._id} value={set.name}>
+                  {set.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </TableCell>
         <TableCell>
           <Input
@@ -355,9 +374,14 @@ function GearRow({
 
 export function GearListTable({
   gear,
+  characterClass,
   onEdit,
   isSubmitting,
 }: GearListTableProps) {
+  const classSets = useQuery(api.sets.listByClass, {
+    className: characterClass,
+  })
+
   const getGearBySlot = (slot: Slot): GearPiece => {
     return gear.find((g) => g.slot === slot) || { slot }
   }
@@ -389,6 +413,7 @@ export function GearListTable({
               key={slot}
               gear={getGearBySlot(slot)}
               displayLabel={SLOT_DISPLAY_LABELS[slot]}
+              classSets={classSets}
               onEdit={handleEditSlot(slot)}
               isSubmitting={isSubmitting}
             />

@@ -1,3 +1,4 @@
+import { useQuery } from "convex/react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,16 +11,19 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type {
+  ClassName,
   GearPiece,
   Quality,
   SecondaryStat,
 } from "@/lib/character-constants"
 import { QUALITY, SECONDARY_STATS } from "@/lib/character-constants"
+import { api } from "../../../convex/_generated/api"
 
 const NONE_VALUE = "__none__"
 
 interface GearRowEditableProps {
   gear: GearPiece
+  characterClass: ClassName
   onSave: (updates: Partial<GearPiece>) => void
   onCancel: () => void
   isSubmitting?: boolean
@@ -27,10 +31,14 @@ interface GearRowEditableProps {
 
 export function GearRowEditable({
   gear,
+  characterClass,
   onSave,
   onCancel,
   isSubmitting,
 }: GearRowEditableProps) {
+  const classSets = useQuery(api.sets.listByClass, {
+    className: characterClass,
+  })
   const [itemName, setItemName] = useState(gear.itemName ?? "")
   const [ilvl, setIlvl] = useState(gear.ilvl?.toString() ?? "")
   const [stat1, setStat1] = useState<SecondaryStat | "">(
@@ -161,13 +169,23 @@ export function GearRowEditable({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="setBonus">Set Bonus</Label>
-          <Input
-            id="setBonus"
-            value={setBonus}
-            onChange={(e) => setSetBonus(e.target.value)}
-            placeholder="e.g. Valorous"
-            disabled={isSubmitting}
-          />
+          <Select
+            value={setBonus || NONE_VALUE}
+            onValueChange={(v) => setSetBonus(v === NONE_VALUE ? "" : v)}
+            disabled={isSubmitting || !classSets}
+          >
+            <SelectTrigger id="setBonus">
+              <SelectValue placeholder="None" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
+              {classSets?.map((set) => (
+                <SelectItem key={set._id} value={set.name}>
+                  {set.name} ({set.quality})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
