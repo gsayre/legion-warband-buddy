@@ -16,6 +16,8 @@ import type {
 } from "@/lib/character-constants"
 import { QUALITY, SECONDARY_STATS } from "@/lib/character-constants"
 
+const NONE_VALUE = "__none__"
+
 interface GearRowEditableProps {
   gear: GearPiece
   onSave: (updates: Partial<GearPiece>) => void
@@ -87,15 +89,17 @@ export function GearRowEditable({
         <div className="space-y-2">
           <Label htmlFor="quality">Quality</Label>
           <Select
-            value={quality}
-            onValueChange={(v) => setQuality(v as Quality | "")}
+            value={quality || NONE_VALUE}
+            onValueChange={(v) =>
+              setQuality(v === NONE_VALUE ? "" : (v as Quality))
+            }
             disabled={isSubmitting}
           >
             <SelectTrigger id="quality">
               <SelectValue placeholder="Auto" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Auto (from ilvl)</SelectItem>
+              <SelectItem value={NONE_VALUE}>Auto (from ilvl)</SelectItem>
               {QUALITY.map((q) => (
                 <SelectItem key={q} value={q}>
                   {q.charAt(0).toUpperCase() + q.slice(1)}
@@ -110,15 +114,17 @@ export function GearRowEditable({
         <div className="space-y-2">
           <Label htmlFor="stat1">Secondary Stat 1</Label>
           <Select
-            value={stat1}
-            onValueChange={(v) => setStat1(v as SecondaryStat | "")}
+            value={stat1 || NONE_VALUE}
+            onValueChange={(v) =>
+              setStat1(v === NONE_VALUE ? "" : (v as SecondaryStat))
+            }
             disabled={isSubmitting}
           >
             <SelectTrigger id="stat1">
               <SelectValue placeholder="None" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
               {SECONDARY_STATS.map((stat) => (
                 <SelectItem key={stat} value={stat}>
                   {stat}
@@ -131,15 +137,17 @@ export function GearRowEditable({
         <div className="space-y-2">
           <Label htmlFor="stat2">Secondary Stat 2</Label>
           <Select
-            value={stat2}
-            onValueChange={(v) => setStat2(v as SecondaryStat | "")}
+            value={stat2 || NONE_VALUE}
+            onValueChange={(v) =>
+              setStat2(v === NONE_VALUE ? "" : (v as SecondaryStat))
+            }
             disabled={isSubmitting}
           >
             <SelectTrigger id="stat2">
               <SelectValue placeholder="None" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
               {SECONDARY_STATS.map((stat) => (
                 <SelectItem key={stat} value={stat}>
                   {stat}
