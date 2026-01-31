@@ -149,7 +149,7 @@ export function SetBonusSummary({
     <div className={cn("space-y-4", className)}>
       {summaries.map((summary) => (
         <div key={summary.setName} className="space-y-1">
-          <h4 className="font-semibold" style={{ color: SET_COLOR }}>
+          <h4 className="font-semibold break-words" style={{ color: SET_COLOR }}>
             {summary.setName} ({summary.equippedCount}/{summary.totalPieces}):
           </h4>
 
@@ -159,7 +159,7 @@ export function SetBonusSummary({
               <li
                 key={slot}
                 className={cn(
-                  "flex items-center gap-1",
+                  "flex items-center gap-1 flex-wrap",
                   equipped ? "set-piece-equipped" : "text-muted-foreground/50",
                 )}
                 style={equipped ? { color: SET_COLOR } : undefined}
@@ -182,7 +182,7 @@ export function SetBonusSummary({
                 <li
                   key={bonus.piecesRequired}
                   className={cn(
-                    "text-sm",
+                    "text-sm break-words",
                     bonus.active
                       ? "text-green-500"
                       : "text-muted-foreground/50",

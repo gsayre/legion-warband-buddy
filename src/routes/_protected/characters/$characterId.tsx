@@ -208,7 +208,7 @@ function CharacterDetail() {
                 gear={currentGear}
                 onSlotClick={(slot) => setEditingSlot(slot)}
               />
-              <div className="flex-shrink-0 min-w-[200px]">
+              <div className="flex-shrink-0 min-w-[200px] max-w-[250px]">
                 <h3 className="font-semibold text-muted-foreground uppercase mb-3">
                   Set Bonuses
                 </h3>
