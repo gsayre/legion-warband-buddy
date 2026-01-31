@@ -1,5 +1,5 @@
 import type { GearPiece, Quality, Slot } from "@/lib/character-constants"
-import { getQualityFromIlvl, SET_COLORS } from "@/lib/character-constants"
+import { SET_COLORS } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
 
 interface GearSlotProps {
@@ -63,10 +63,10 @@ export function GearSlot({
   displayLabel,
 }: GearSlotProps) {
   const hasItem = gear.ilvl !== undefined && gear.ilvl > 0
-  const quality = gear.quality || getQualityFromIlvl(gear.ilvl)
+  const quality = gear.quality
   const isLegendary = Boolean(gear.legendary)
 
-  const qualityStyle = hasItem ? QUALITY_STYLES[quality] : null
+  const qualityStyle = hasItem && quality ? QUALITY_STYLES[quality] : null
 
   return (
     <button
@@ -98,14 +98,7 @@ export function GearSlot({
         <div
           className="absolute -top-1 -right-1 text-xs font-bold rounded-full px-1.5 py-0.5 bg-background border shadow-sm min-w-[24px] text-center"
           style={{
-            borderColor:
-              quality === "legendary"
-                ? "var(--quality-legendary)"
-                : quality === "epic"
-                  ? "var(--quality-epic)"
-                  : quality === "rare"
-                    ? "var(--quality-rare)"
-                    : undefined,
+            borderColor: quality ? `var(--quality-${quality})` : undefined,
           }}
         >
           {gear.ilvl}

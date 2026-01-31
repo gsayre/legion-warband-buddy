@@ -23,7 +23,7 @@ import type {
   SecondaryStat,
   Slot,
 } from "@/lib/character-constants"
-import { getQualityFromIlvl, SECONDARY_STATS } from "@/lib/character-constants"
+import { QUALITY, SECONDARY_STATS } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
 
 const NONE_VALUE = "__none__"
@@ -107,9 +107,9 @@ function GearRow({
     quality: "",
   })
 
-  const quality = gear.quality || getQualityFromIlvl(gear.ilvl)
-  const qualityColor =
-    gear.ilvl && gear.ilvl > 0 ? `var(--quality-${quality})` : undefined
+  const qualityColor = gear.quality
+    ? `var(--quality-${gear.quality})`
+    : undefined
 
   const handleStartEdit = () => {
     setEditState({
@@ -176,6 +176,30 @@ function GearRow({
             className="h-8 w-16 text-sm"
             disabled={isSubmitting}
           />
+        </TableCell>
+        <TableCell>
+          <Select
+            value={editState.quality || NONE_VALUE}
+            onValueChange={(v) =>
+              setEditState({
+                ...editState,
+                quality: v === NONE_VALUE ? "" : (v as Quality),
+              })
+            }
+            disabled={isSubmitting}
+          >
+            <SelectTrigger className="h-8 w-24 text-sm">
+              <SelectValue placeholder="-" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
+              {QUALITY.map((q) => (
+                <SelectItem key={q} value={q}>
+                  {q.charAt(0).toUpperCase() + q.slice(1)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </TableCell>
         <TableCell>
           <Select
@@ -291,6 +315,14 @@ function GearRow({
       <TableCell style={qualityColor ? { color: qualityColor } : {}}>
         {gear.ilvl && gear.ilvl > 0 ? gear.ilvl : "-"}
       </TableCell>
+      <TableCell
+        className="text-sm"
+        style={qualityColor ? { color: qualityColor } : {}}
+      >
+        {gear.quality
+          ? gear.quality.charAt(0).toUpperCase() + gear.quality.slice(1)
+          : "-"}
+      </TableCell>
       <TableCell className="text-sm text-muted-foreground">
         {stats[0] || "-"}
       </TableCell>
@@ -343,6 +375,7 @@ export function GearListTable({
             <TableHead className="w-24">Slot</TableHead>
             <TableHead>Item Name</TableHead>
             <TableHead className="w-16">iLvl</TableHead>
+            <TableHead className="w-24">Quality</TableHead>
             <TableHead className="w-24">Stat 1</TableHead>
             <TableHead className="w-24">Stat 2</TableHead>
             <TableHead className="w-24">Set</TableHead>
