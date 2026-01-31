@@ -1,4 +1,5 @@
-import type { GearPiece, Slot } from "@/lib/character-constants"
+import type { ClassName, GearPiece, Slot } from "@/lib/character-constants"
+import type { GearSet, SetBonus, StatBonusEntry } from "@/lib/sets-constants"
 import { cn } from "@/lib/utils"
 
 // Purple color for epic/set items
@@ -6,48 +7,137 @@ const SET_COLOR = "var(--quality-epic)"
 
 interface SetBonusSummaryProps {
   gear: GearPiece[]
+  sets: GearSet[] | undefined
+  characterClass: ClassName
   className?: string
 }
 
-// Standard set piece slots (typical tier set slots)
-const SET_SLOTS: Slot[] = ["Head", "Shoulders", "Chest", "Gloves", "Pants"]
-const TOTAL_SET_PIECES = SET_SLOTS.length
+// Summary data for a single set
+interface SetSummaryItem {
+  setName: string
+  quality: string
+  equippedCount: number
+  totalPieces: number
+  pieces: { slot: string; name: string; equipped: boolean }[]
+  bonuses: {
+    piecesRequired: number
+    active: boolean
+    stats: { stat: string; value: number }[]
+    specialBonus?: string
+  }[]
+  // If true, this set wasn't found in the database
+  fallback: boolean
+}
 
-// Get all unique set names from gear and group pieces by set
-function getSetBonusData(gear: GearPiece[]) {
-  const setMap = new Map<string, { slot: Slot; equipped: boolean }[]>()
+// Filter stat bonuses by character class
+function filterStatsForClass(
+  stats: StatBonusEntry[] | undefined,
+  characterClass: ClassName,
+): { stat: string; value: number }[] {
+  if (!stats) return []
 
-  // First, find all unique set names
-  const setNames = new Set<string>()
+  return stats
+    .filter(
+      (s) =>
+        !s.forClasses ||
+        s.forClasses.length === 0 ||
+        s.forClasses.includes(characterClass),
+    )
+    .map((s) => ({ stat: s.stat, value: s.value }))
+}
+
+// Build summary data from gear and database sets
+function buildSetSummaryData(
+  gear: GearPiece[],
+  sets: GearSet[],
+  characterClass: ClassName,
+): SetSummaryItem[] {
+  // Group gear by set name
+  const gearBySet = new Map<string, GearPiece[]>()
   for (const piece of gear) {
     if (piece.setBonus) {
-      setNames.add(piece.setBonus)
+      const existing = gearBySet.get(piece.setBonus) || []
+      existing.push(piece)
+      gearBySet.set(piece.setBonus, existing)
     }
   }
 
-  // For each set, create the list of slots with equipped status
-  for (const setName of setNames) {
-    const pieces = SET_SLOTS.map((slot) => {
-      const gearPiece = gear.find((g) => g.slot === slot)
-      const isEquipped = gearPiece?.setBonus === setName
-      return { slot, equipped: isEquipped }
-    })
-    setMap.set(setName, pieces)
+  const summaries: SetSummaryItem[] = []
+
+  for (const [setName, equippedPieces] of gearBySet) {
+    // Find matching set in database
+    const dbSet = sets.find((s) => s.name === setName)
+
+    if (dbSet) {
+      // Build pieces list from database set
+      const equippedSlots = new Set(equippedPieces.map((p) => p.slot))
+      const pieces = dbSet.pieces.map((p) => ({
+        slot: p.slot,
+        name: p.name,
+        equipped: equippedSlots.has(p.slot as Slot),
+      }))
+
+      // Build bonuses with active status
+      const bonuses = dbSet.bonuses.map((b: SetBonus) => ({
+        piecesRequired: b.pieces,
+        active: equippedPieces.length >= b.pieces,
+        stats: filterStatsForClass(b.stats, characterClass),
+        specialBonus: b.specialBonus,
+      }))
+
+      summaries.push({
+        setName,
+        quality: dbSet.quality,
+        equippedCount: equippedPieces.length,
+        totalPieces: dbSet.pieces.length,
+        pieces,
+        bonuses,
+        fallback: false,
+      })
+    } else {
+      // Fallback for sets not in database
+      summaries.push({
+        setName,
+        quality: "epic",
+        equippedCount: equippedPieces.length,
+        totalPieces: equippedPieces.length,
+        pieces: equippedPieces.map((p) => ({
+          slot: p.slot,
+          name: p.itemName || p.slot,
+          equipped: true,
+        })),
+        bonuses: [],
+        fallback: true,
+      })
+    }
   }
 
-  return setMap
+  // Sort by equipped count descending
+  return summaries.sort((a, b) => b.equippedCount - a.equippedCount)
 }
 
-export function SetBonusSummary({ gear, className }: SetBonusSummaryProps) {
-  const setData = getSetBonusData(gear)
-  const entries = Array.from(setData.entries()).sort((a, b) => {
-    // Sort by number of equipped pieces (descending)
-    const aCount = a[1].filter((p) => p.equipped).length
-    const bCount = b[1].filter((p) => p.equipped).length
-    return bCount - aCount
-  })
+// Format stats as a readable string
+function formatStats(stats: { stat: string; value: number }[]): string {
+  return stats.map((s) => `+${s.value} ${s.stat}`).join(", ")
+}
 
-  if (entries.length === 0) {
+export function SetBonusSummary({
+  gear,
+  sets,
+  characterClass,
+  className,
+}: SetBonusSummaryProps) {
+  // Loading state
+  if (sets === undefined) {
+    return (
+      <div className={cn("text-muted-foreground", className)}>Loading...</div>
+    )
+  }
+
+  const summaries = buildSetSummaryData(gear, sets, characterClass)
+
+  // Empty state
+  if (summaries.length === 0) {
     return (
       <div className={cn("text-muted-foreground", className)}>
         No set bonuses
@@ -57,34 +147,68 @@ export function SetBonusSummary({ gear, className }: SetBonusSummaryProps) {
 
   return (
     <div className={cn("space-y-4", className)}>
-      {entries.map(([setName, pieces]) => {
-        const equippedCount = pieces.filter((p) => p.equipped).length
+      {summaries.map((summary) => (
+        <div key={summary.setName} className="space-y-1">
+          <h4 className="font-semibold" style={{ color: SET_COLOR }}>
+            {summary.setName} ({summary.equippedCount}/{summary.totalPieces}):
+          </h4>
 
-        return (
-          <div key={setName} className="space-y-1">
-            <h4 className="font-semibold" style={{ color: SET_COLOR }}>
-              {setName} ({equippedCount}/{TOTAL_SET_PIECES}):
-            </h4>
-            <ul className="space-y-0.5 pl-2">
-              {pieces.map(({ slot, equipped }) => (
+          {/* Piece list */}
+          <ul className="space-y-0.5 pl-2">
+            {summary.pieces.map(({ slot, name, equipped }) => (
+              <li
+                key={slot}
+                className={cn(
+                  "flex items-center gap-1",
+                  equipped ? "set-piece-equipped" : "text-muted-foreground/50",
+                )}
+                style={equipped ? { color: SET_COLOR } : undefined}
+              >
+                <span className="text-muted-foreground/50">-</span>
+                <span>{slot}</span>
+                {name !== slot && (
+                  <span className="text-muted-foreground/70 text-sm">
+                    ({name})
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {/* Bonuses */}
+          {summary.bonuses.length > 0 && (
+            <ul className="space-y-0.5 pl-2 pt-1">
+              {summary.bonuses.map((bonus) => (
                 <li
-                  key={slot}
+                  key={bonus.piecesRequired}
                   className={cn(
-                    "flex items-center gap-1",
-                    equipped
-                      ? "set-piece-equipped"
+                    "text-sm",
+                    bonus.active
+                      ? "text-green-500"
                       : "text-muted-foreground/50",
                   )}
-                  style={equipped ? { color: SET_COLOR } : undefined}
                 >
-                  <span className="text-muted-foreground/50">-</span>
-                  <span>{slot}</span>
+                  <span className="font-medium">
+                    ({bonus.piecesRequired}) Set:
+                  </span>{" "}
+                  {bonus.stats.length > 0 && formatStats(bonus.stats)}
+                  {bonus.stats.length > 0 && bonus.specialBonus && " + "}
+                  {bonus.specialBonus && (
+                    <span className="italic">{bonus.specialBonus}</span>
+                  )}
                 </li>
               ))}
             </ul>
-          </div>
-        )
-      })}
+          )}
+
+          {/* Fallback notice */}
+          {summary.fallback && (
+            <p className="text-xs text-muted-foreground/50 pl-2 italic">
+              Set details not in database
+            </p>
+          )}
+        </div>
+      ))}
     </div>
   )
 }

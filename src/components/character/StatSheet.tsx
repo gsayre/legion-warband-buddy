@@ -4,12 +4,14 @@ import {
   getLegendaries,
   isStatCapped,
 } from "@/lib/character-constants"
+import type { GearSet } from "@/lib/sets-constants"
 import { cn } from "@/lib/utils"
 import { SetBonusSummary } from "./SetBonusSummary"
 
 interface StatSheetProps {
   className: ClassName
   gear: GearPiece[]
+  sets: GearSet[] | undefined
   hitPercent: number
   expertisePercent: number
   onEditStats?: () => void
@@ -19,6 +21,7 @@ interface StatSheetProps {
 export function StatSheet({
   className,
   gear,
+  sets,
   hitPercent,
   expertisePercent,
   onEditStats,
@@ -97,7 +100,7 @@ export function StatSheet({
         <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">
           Set Bonuses
         </h3>
-        <SetBonusSummary gear={gear} />
+        <SetBonusSummary gear={gear} sets={sets} characterClass={className} />
       </div>
 
       {/* Legendaries */}

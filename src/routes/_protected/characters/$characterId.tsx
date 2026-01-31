@@ -38,6 +38,7 @@ function CharacterDetail() {
   const character = useQuery(api.characters.get, {
     id: characterId as Id<"characters">,
   })
+  const sets = useQuery(api.sets.list)
   const updateCharacter = useMutation(api.characters.update)
   const updateGearPiece = useMutation(api.characters.updateGearPiece)
   const removeCharacter = useMutation(api.characters.remove)
@@ -211,7 +212,11 @@ function CharacterDetail() {
                 <h3 className="font-semibold text-muted-foreground uppercase mb-3">
                   Set Bonuses
                 </h3>
-                <SetBonusSummary gear={currentGear} />
+                <SetBonusSummary
+                  gear={currentGear}
+                  sets={sets}
+                  characterClass={character.className as ClassName}
+                />
               </div>
             </div>
           </CardContent>
