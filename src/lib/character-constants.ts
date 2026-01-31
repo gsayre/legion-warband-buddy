@@ -206,8 +206,8 @@ export function isStatCapped(
   percent: number,
 ): boolean {
   const caps = {
-    hit: 10, // 10% hit cap typical
-    expertise: 6, // 6% expertise cap typical
+    hit: 20,
+    expertise: 20,
   }
   return percent >= caps[statName]
 }
