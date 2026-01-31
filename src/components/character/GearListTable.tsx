@@ -26,6 +26,8 @@ import type {
 import { getQualityFromIlvl, SECONDARY_STATS } from "@/lib/character-constants"
 import { cn } from "@/lib/utils"
 
+const NONE_VALUE = "__none__"
+
 interface GearListTableProps {
   gear: GearPiece[]
   onEdit: (slot: Slot, updates: Partial<GearPiece>) => Promise<void>
@@ -177,9 +179,12 @@ function GearRow({
         </TableCell>
         <TableCell>
           <Select
-            value={editState.stat1}
+            value={editState.stat1 || NONE_VALUE}
             onValueChange={(v) =>
-              setEditState({ ...editState, stat1: v as SecondaryStat | "" })
+              setEditState({
+                ...editState,
+                stat1: v === NONE_VALUE ? "" : (v as SecondaryStat),
+              })
             }
             disabled={isSubmitting}
           >
@@ -187,7 +192,7 @@ function GearRow({
               <SelectValue placeholder="-" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
               {SECONDARY_STATS.map((stat) => (
                 <SelectItem key={stat} value={stat}>
                   {stat}
@@ -198,9 +203,12 @@ function GearRow({
         </TableCell>
         <TableCell>
           <Select
-            value={editState.stat2}
+            value={editState.stat2 || NONE_VALUE}
             onValueChange={(v) =>
-              setEditState({ ...editState, stat2: v as SecondaryStat | "" })
+              setEditState({
+                ...editState,
+                stat2: v === NONE_VALUE ? "" : (v as SecondaryStat),
+              })
             }
             disabled={isSubmitting}
           >
@@ -208,7 +216,7 @@ function GearRow({
               <SelectValue placeholder="-" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">None</SelectItem>
+              <SelectItem value={NONE_VALUE}>None</SelectItem>
               {SECONDARY_STATS.map((stat) => (
                 <SelectItem key={stat} value={stat}>
                   {stat}
