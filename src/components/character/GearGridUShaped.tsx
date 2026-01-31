@@ -4,7 +4,6 @@ import { GearSlot } from "./GearSlot"
 
 interface GearGridUShapedProps {
   gear: GearPiece[]
-  onSlotClick?: (slot: Slot) => void
   className?: string
 }
 
@@ -47,25 +46,28 @@ function getGearBySlot(gear: GearPiece[], slot: Slot): GearPiece {
 
 export function GearGridUShaped({
   gear,
-  onSlotClick,
   className,
 }: GearGridUShapedProps) {
-  const handleClick = (slot: Slot) => {
-    onSlotClick?.(slot)
-  }
+  // Check if Main Hand is two-handed
+  const mainHandGear = gear.find((g) => g.slot === "Main Hand")
+  const isMainHandTwoHanded = mainHandGear?.twoHanded ?? false
 
   return (
     <div
       className={cn(
-        "grid gap-5 justify-items-center p-8 w-full max-w-[1000px]",
-        "grid-cols-[repeat(5,minmax(120px,1fr))] grid-rows-[repeat(7,auto)]",
-        "max-sm:grid-cols-[repeat(5,1fr)] max-sm:gap-1 max-sm:p-2",
+        "grid justify-items-center",
+        "grid-cols-[repeat(5,2.75rem)] grid-rows-[repeat(7,auto)]",
+        "gap-1.5 p-2",
+        "sm:grid-cols-[repeat(5,3.25rem)] sm:gap-2 sm:p-3",
+        "md:grid-cols-[repeat(5,4rem)] md:gap-2.5 md:p-4",
+        "lg:grid-cols-[repeat(5,4.5rem)] lg:gap-3 lg:p-4",
         className,
       )}
     >
       {Object.entries(SLOT_POSITIONS).map(([slot, position]) => {
         const gearPiece = getGearBySlot(gear, slot as Slot)
         const displayLabel = DISPLAY_LABELS[slot as Slot]
+        const isDisabled = slot === "Off Hand" && isMainHandTwoHanded
 
         return (
           <div
@@ -77,8 +79,8 @@ export function GearGridUShaped({
           >
             <GearSlot
               gear={gearPiece}
-              onClick={() => handleClick(slot as Slot)}
               displayLabel={displayLabel}
+              disabled={isDisabled}
             />
           </div>
         )

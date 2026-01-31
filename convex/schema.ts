@@ -126,6 +126,7 @@ const gearPieceValidator = v.object({
   setBonus: v.optional(v.string()),
   legendary: v.optional(v.string()),
   quality: v.optional(QUALITY_VALIDATOR),
+  twoHanded: v.optional(v.boolean()),
 })
 
 export default defineSchema({

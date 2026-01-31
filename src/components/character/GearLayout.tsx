@@ -18,6 +18,10 @@ export function GearLayout({ gear, onSlotClick, className }: GearLayoutProps) {
     onSlotClick?.(slot)
   }
 
+  // Check if Main Hand is two-handed
+  const mainHandGear = gear.find((g) => g.slot === "Main Hand")
+  const isMainHandTwoHanded = mainHandGear?.twoHanded ?? false
+
   return (
     <div className={cn("flex flex-col items-center gap-2", className)}>
       {/* Row 1: Head */}
@@ -73,6 +77,7 @@ export function GearLayout({ gear, onSlotClick, className }: GearLayoutProps) {
         <GearSlot
           gear={getGearBySlot(gear, "Off Hand")}
           onClick={() => handleClick("Off Hand")}
+          disabled={isMainHandTwoHanded}
         />
       </div>
 

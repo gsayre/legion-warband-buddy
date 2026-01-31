@@ -121,6 +121,7 @@ function CharacterDetail() {
         setBonus: updates.setBonus,
         legendary: updates.legendary,
         quality: updates.quality,
+        twoHanded: updates.twoHanded,
       })
       setEditingSlot(null)
     } catch (err) {
@@ -145,6 +146,7 @@ function CharacterDetail() {
         setBonus: updates.setBonus,
         legendary: updates.legendary,
         quality: updates.quality,
+        twoHanded: updates.twoHanded,
       })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update gear")
@@ -169,18 +171,22 @@ function CharacterDetail() {
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <header className="flex items-center justify-between mb-8">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-2xl sm:text-3xl font-bold">
             {character.name || character.className}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm sm:text-base">
             {character.name ? `${character.className} - ` : ""}Character Details
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button variant="destructive" onClick={() => setIsDeleting(true)}>
+        <div className="w-full sm:w-auto">
+          <Button
+            variant="destructive"
+            onClick={() => setIsDeleting(true)}
+            className="w-full sm:w-auto"
+          >
             Delete
           </Button>
         </div>
@@ -194,22 +200,21 @@ function CharacterDetail() {
         </Card>
       )}
 
-      <main className="grid gap-8 lg:grid-cols-2">
+      <main className="grid grid-cols-1 gap-4 sm:gap-6 md:gap-8 lg:grid-cols-2">
         {/* Left column - Gear Viewer + Set Bonuses side by side */}
-        <Card>
-          <CardHeader className="pb-0">
+        <Card className="overflow-hidden">
+          <CardHeader className="pb-0 p-3 sm:p-4 md:p-6">
             <div className="flex justify-center">
               <GearToggle mode={gearMode} onChange={setGearMode} />
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="flex gap-6 text-lg">
-              <GearGridUShaped
-                gear={currentGear}
-                onSlotClick={(slot) => setEditingSlot(slot)}
-              />
-              <div className="flex-shrink-0 min-w-[200px] max-w-[250px]">
-                <h3 className="font-semibold text-muted-foreground uppercase mb-3">
+          <CardContent className="p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6">
+              <div className="flex-shrink-0 self-center md:self-start">
+                <GearGridUShaped gear={currentGear} />
+              </div>
+              <div className="flex-1 min-w-0 md:min-w-[200px]">
+                <h3 className="font-semibold text-muted-foreground uppercase mb-3 text-sm">
                   Set Bonuses
                 </h3>
                 <SetBonusSummary
@@ -243,15 +248,15 @@ function CharacterDetail() {
 
           {/* Legendaries */}
           {legendaries.length > 0 && (
-            <div className="bg-muted rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-2">
+            <div className="bg-muted rounded-lg p-3 sm:p-4">
+              <h3 className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase mb-2">
                 Legendaries
               </h3>
               <div className="space-y-1">
                 {legendaries.map((item) => (
                   <div
                     key={`${item.slot}-${item.legendary}`}
-                    className="flex items-center gap-2 text-sm"
+                    className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                     style={{ color: "var(--quality-legendary)" }}
                   >
                     <span className="font-semibold">{item.legendary}</span>
@@ -265,9 +270,11 @@ function CharacterDetail() {
       </main>
 
       {/* Navigation */}
-      <div className="flex gap-4 mt-8">
-        <Link to="/characters">
-          <Button variant="outline">Back to Characters</Button>
+      <div className="flex gap-4 mt-6 md:mt-8">
+        <Link to="/characters" className="w-full sm:w-auto">
+          <Button variant="outline" className="w-full sm:w-auto">
+            Back to Characters
+          </Button>
         </Link>
       </div>
 
@@ -276,7 +283,7 @@ function CharacterDetail() {
         open={editingSlot !== null}
         onOpenChange={(open) => !open && setEditingSlot(null)}
       >
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit {editingSlot}</DialogTitle>
             <DialogDescription>Update the gear in this slot</DialogDescription>
@@ -285,6 +292,7 @@ function CharacterDetail() {
             <GearRowEditable
               gear={editingGearPiece}
               characterClass={character.className as ClassName}
+              allGear={currentGear}
               onSave={handleUpdateGear}
               onCancel={() => setEditingSlot(null)}
               isSubmitting={isSubmitting}
@@ -295,7 +303,7 @@ function CharacterDetail() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleting} onOpenChange={setIsDeleting}>
-        <DialogContent>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Delete Character</DialogTitle>
             <DialogDescription>
@@ -303,11 +311,12 @@ function CharacterDetail() {
               action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               {isSubmitting ? "Deleting..." : "Delete Character"}
             </Button>
@@ -315,6 +324,7 @@ function CharacterDetail() {
               variant="outline"
               onClick={() => setIsDeleting(false)}
               disabled={isSubmitting}
+              className="w-full sm:w-auto"
             >
               Cancel
             </Button>

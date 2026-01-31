@@ -216,6 +216,7 @@ export const updateGearPiece = mutation({
     setBonus: v.optional(v.string()),
     legendary: v.optional(v.string()),
     quality: v.optional(QUALITY_VALIDATOR),
+    twoHanded: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
@@ -245,6 +246,42 @@ export const updateGearPiece = mutation({
       setBonus: args.setBonus,
       legendary: args.legendary,
       quality: args.quality,
+      twoHanded: args.twoHanded,
+    }
+
+    // If updating Main Hand with two-handed weapon
+    if (args.slot === "Main Hand" && args.twoHanded) {
+      // Duplicate stats to Off Hand
+      const offHandIndex = currentGear.findIndex((g) => g.slot === "Off Hand")
+      if (offHandIndex !== -1) {
+        currentGear[offHandIndex] = {
+          slot: "Off Hand",
+          itemName: args.itemName,
+          ilvl: args.ilvl,
+          secondaryStats: args.secondaryStats,
+          setBonus: args.setBonus,
+          legendary: args.legendary,
+          quality: args.quality,
+          twoHanded: undefined, // Off Hand doesn't have twoHanded flag
+        }
+      }
+    }
+
+    // If updating Main Hand and removing two-handed flag, clear Off Hand
+    if (args.slot === "Main Hand" && !args.twoHanded) {
+      const offHandIndex = currentGear.findIndex((g) => g.slot === "Off Hand")
+      if (offHandIndex !== -1) {
+        currentGear[offHandIndex] = {
+          slot: "Off Hand",
+          itemName: undefined,
+          ilvl: undefined,
+          secondaryStats: undefined,
+          setBonus: undefined,
+          legendary: undefined,
+          quality: undefined,
+          twoHanded: undefined,
+        }
+      }
     }
 
     await ctx.db.patch(args.id, {

@@ -120,6 +120,7 @@ export interface GearPiece {
   setBonus?: string
   legendary?: string
   quality?: Quality
+  twoHanded?: boolean
 }
 
 // Character type
@@ -145,6 +146,7 @@ export function createEmptyGearSet(): GearPiece[] {
     setBonus: undefined,
     legendary: undefined,
     quality: undefined,
+    twoHanded: undefined,
   }))
 }
 

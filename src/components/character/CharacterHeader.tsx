@@ -90,7 +90,7 @@ function InlineEditableName({
           onKeyDown={handleInputKeyDown}
           onBlur={handleSave}
           disabled={isSubmitting}
-          className="w-48 h-10 text-xl font-bold"
+          className="w-40 sm:w-48 h-9 sm:h-10 text-lg sm:text-xl font-bold"
         />
         <Button
           size="icon"
@@ -123,7 +123,7 @@ function InlineEditableName({
         onMouseLeave={() => setIsHovered(false)}
         onClick={handleStartEdit}
       >
-        <h2 className="text-2xl font-bold">{displayName}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">{displayName}</h2>
         <Pencil
           className={cn(
             "h-4 w-4 text-muted-foreground transition-opacity",
@@ -184,7 +184,7 @@ function InlineEditableStat({
   if (isEditing) {
     return (
       <div className="flex items-center gap-2">
-        <div className="text-sm text-muted-foreground">{label}</div>
+        <div className="text-xs sm:text-sm text-muted-foreground">{label}</div>
         <div className="flex items-center gap-1">
           <Input
             ref={inputRef}
@@ -195,9 +195,9 @@ function InlineEditableStat({
             onKeyDown={handleInputKeyDown}
             onBlur={handleSave}
             disabled={isSubmitting}
-            className="w-20 h-8 text-sm"
+            className="w-16 sm:w-20 h-7 sm:h-8 text-xs sm:text-sm"
           />
-          <span className="text-muted-foreground">%</span>
+          <span className="text-muted-foreground text-xs sm:text-sm">%</span>
           <Button
             size="icon"
             variant="ghost"
@@ -229,10 +229,10 @@ function InlineEditableStat({
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleStartEdit}
     >
-      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-xs sm:text-sm text-muted-foreground">{label}</span>
       <span
         className={cn(
-          "text-xl font-bold",
+          "text-lg sm:text-xl font-bold",
           isCapped ? "text-green-500 font-semibold" : "text-yellow-500",
         )}
       >
@@ -275,24 +275,26 @@ export function CharacterHeader({
   }
 
   return (
-    <div className="bg-muted rounded-lg p-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="bg-muted rounded-lg p-3 sm:p-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
         {/* Name/Class and iLvl */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           <InlineEditableName
             name={name}
             className={className}
             onSave={handleUpdateName}
             isSubmitting={isSubmitting}
           />
-          <div className="text-2xl font-bold text-primary">
+          <div className="text-xl sm:text-2xl font-bold text-primary">
             {avgIlvl > 0 ? avgIlvl.toFixed(1) : "-"}
-            <span className="text-sm text-muted-foreground ml-1">ilvl</span>
+            <span className="text-xs sm:text-sm text-muted-foreground ml-1">
+              ilvl
+            </span>
           </div>
         </div>
 
         {/* Hit and Expertise - inline editable */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6 w-full sm:w-auto">
           <InlineEditableStat
             label="Hit"
             value={hitPercent}

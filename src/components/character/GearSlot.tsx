@@ -7,6 +7,7 @@ interface GearSlotProps {
   onClick?: () => void
   className?: string
   displayLabel?: string
+  disabled?: boolean
 }
 
 // Short labels for slots
@@ -61,6 +62,7 @@ export function GearSlot({
   onClick,
   className,
   displayLabel,
+  disabled,
 }: GearSlotProps) {
   const hasItem = gear.ilvl !== undefined && gear.ilvl > 0
   const quality = gear.quality
@@ -68,14 +70,22 @@ export function GearSlot({
 
   const qualityStyle = hasItem && quality ? QUALITY_STYLES[quality] : null
 
+  const Component = onClick ? "button" : "div"
+
   return (
-    <button
-      type="button"
+    <Component
+      type={onClick ? "button" : undefined}
       onClick={onClick}
       className={cn(
-        "relative rounded-lg border-2 p-4 transition-all duration-200 hover:scale-105 cursor-pointer min-w-[100px] min-h-[100px]",
+        "relative border-2 transition-all duration-200",
+        "rounded p-0.5 w-[2.75rem] h-[2.75rem]",
+        "sm:w-[3.25rem] sm:h-[3.25rem] sm:p-1",
+        "md:w-[4rem] md:h-[4rem] md:p-1.5",
+        "lg:rounded-lg lg:w-[4.5rem] lg:h-[4.5rem] lg:p-1.5",
         !hasItem && "border-dashed border-muted-foreground/30 bg-muted/20",
         isLegendary && "animate-legendary-glow",
+        disabled && "opacity-40 cursor-not-allowed",
+        onClick && !disabled && "cursor-pointer hover:scale-105",
         className,
       )}
       style={
@@ -86,17 +96,23 @@ export function GearSlot({
             }
           : undefined
       }
-      title={hasItem ? `${gear.slot} - ilvl ${gear.ilvl}` : gear.slot}
+      title={
+        disabled
+          ? "Disabled (Main Hand is Two-Handed)"
+          : hasItem
+            ? `${gear.slot} - ilvl ${gear.ilvl}`
+            : gear.slot
+      }
     >
       {/* Slot label */}
-      <div className="text-xs text-center text-muted-foreground">
+      <div className="text-[10px] sm:text-xs text-center text-muted-foreground">
         {displayLabel || SLOT_LABELS[gear.slot]}
       </div>
 
       {/* Item level badge */}
       {hasItem && (
         <div
-          className="absolute -top-1 -right-1 text-xs font-bold rounded-full px-1.5 py-0.5 bg-background border shadow-sm min-w-[24px] text-center"
+          className="absolute -top-1 -right-1 text-[10px] sm:text-xs font-bold rounded-full px-1.5 py-0.5 bg-background border shadow-sm min-w-[20px] sm:min-w-[24px] text-center"
           style={{
             borderColor: quality ? `var(--quality-${quality})` : undefined,
           }}
@@ -108,7 +124,7 @@ export function GearSlot({
       {/* Set bonus indicator */}
       {gear.setBonus && (
         <div
-          className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-semibold rounded px-1 py-0.5 whitespace-nowrap bg-background/90 backdrop-blur-sm"
+          className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[8px] sm:text-[10px] font-semibold rounded px-1 py-0.5 whitespace-nowrap bg-background/90 backdrop-blur-sm"
           style={{
             color: SET_COLORS[gear.setBonus] || "inherit",
             borderColor: SET_COLORS[gear.setBonus] || "currentColor",
@@ -121,10 +137,10 @@ export function GearSlot({
 
       {/* Legendary indicator */}
       {isLegendary && (
-        <div className="absolute top-0 left-0 text-[10px] text-orange-500 font-bold">
+        <div className="absolute top-0 left-0 text-[8px] sm:text-[10px] text-orange-500 font-bold">
           L
         </div>
       )}
-    </button>
+    </Component>
   )
 }
